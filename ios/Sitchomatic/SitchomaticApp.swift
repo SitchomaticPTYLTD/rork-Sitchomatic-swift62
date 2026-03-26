@@ -183,6 +183,7 @@ struct SitchomaticApp: App {
                         PPSRAutomationViewModel.shared.handleMemoryPressure()
                         PPSRAutomationViewModel.shared.trimChecksIfNeeded()
                         UnifiedSessionViewModel.shared.handleMemoryPressure()
+                        UnifiedScreenshotManager.shared.handleMemoryPressure()
                     }
 
                     let vault = PersistentFileStorageService.shared

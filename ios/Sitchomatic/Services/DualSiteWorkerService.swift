@@ -12,6 +12,7 @@ class DualSiteWorkerService {
     private let blacklistService = BlacklistService.shared
     private let urlRotation = LoginURLRotationService.shared
     private let crashProtection = CrashProtectionService.shared
+    private let screenshotManager = UnifiedScreenshotManager.shared
 
     struct WorkerResult {
         let session: DualSiteSession
@@ -41,8 +42,33 @@ class DualSiteWorkerService {
         var joeScreenshots: [PPSRDebugScreenshot] = []
         var ignScreenshots: [PPSRDebugScreenshot] = []
 
-        joeEngine.onScreenshot = { screenshot in joeScreenshots.append(screenshot) }
-        ignEngine.onScreenshot = { screenshot in ignScreenshots.append(screenshot) }
+        let credEmail = session.credential.email
+        let workerSessionId = session.id
+
+        joeEngine.onScreenshot = { [weak self] screenshot in
+            joeScreenshots.append(screenshot)
+            Task { @MainActor in
+                await self?.captureUnifiedScreenshot(
+                    from: screenshot,
+                    sessionId: workerSessionId,
+                    credentialEmail: credEmail,
+                    site: "joe",
+                    attemptNumber: screenshot.stepName.contains("cycle") ? self?.extractCycleNum(screenshot.stepName) ?? 0 : 0
+                )
+            }
+        }
+        ignEngine.onScreenshot = { [weak self] screenshot in
+            ignScreenshots.append(screenshot)
+            Task { @MainActor in
+                await self?.captureUnifiedScreenshot(
+                    from: screenshot,
+                    sessionId: workerSessionId,
+                    credentialEmail: credEmail,
+                    site: "ignition",
+                    attemptNumber: screenshot.stepName.contains("cycle") ? self?.extractCycleNum(screenshot.stepName) ?? 0 : 0
+                )
+            }
+        }
         joeEngine.onLog = { msg, level in onLog("[JOE] \(msg)", level) }
         ignEngine.onLog = { msg, level in onLog("[IGN] \(msg)", level) }
 
@@ -111,6 +137,8 @@ class DualSiteWorkerService {
 
             let classification = classifyOutcomes(joe: joeOutcome, ignition: ignOutcome, attemptNum: attemptNum, maxAttempts: config.maxAttemptsPerSite)
 
+            let terminalStep = classificationToStep(classification)
+
             switch classification {
             case .success:
                 session.globalState = .success
@@ -119,6 +147,7 @@ class DualSiteWorkerService {
                 session.endTime = Date()
                 onLog("Worker \(sessionId): SUCCESS — credential valid", .success)
                 notifications.sendBatchComplete(working: 1, dead: 0, requeued: 0)
+                await captureTerminalScreenshots(joeEngine: joeEngine, ignEngine: ignEngine, joeAttempt: joeAttempt, ignAttempt: ignAttempt, sessionId: workerSessionId, email: credEmail, attemptNum: attemptNum, step: .successDetected)
 
             case .permBan:
                 session.globalState = .abortPerm
@@ -127,6 +156,7 @@ class DualSiteWorkerService {
                 session.endTime = Date()
                 onLog("Worker \(sessionId): PERM BAN — early stop, identity burned", .error)
                 blacklistService.addToBlacklist(session.credential.email, reason: "Auto: perm disabled via unified test")
+                await captureTerminalScreenshots(joeEngine: joeEngine, ignEngine: ignEngine, joeAttempt: joeAttempt, ignAttempt: ignAttempt, sessionId: workerSessionId, email: credEmail, attemptNum: attemptNum, step: .terminalState)
 
             case .tempLock:
                 session.globalState = .abortTemp
@@ -134,9 +164,11 @@ class DualSiteWorkerService {
                 session.identityAction = .save
                 session.endTime = Date()
                 onLog("Worker \(sessionId): TEMP LOCK — account exists, identity saved", .warning)
+                await captureTerminalScreenshots(joeEngine: joeEngine, ignEngine: ignEngine, joeAttempt: joeAttempt, ignAttempt: ignAttempt, sessionId: workerSessionId, email: credEmail, attemptNum: attemptNum, step: .terminalState)
 
             case .continueLoop:
                 onLog("Worker \(sessionId): incorrect password on attempt \(attemptNum) — continuing", .info)
+                await capturePostAttemptScreenshots(joeEngine: joeEngine, ignEngine: ignEngine, joeAttempt: joeAttempt, ignAttempt: ignAttempt, sessionId: workerSessionId, email: credEmail, attemptNum: attemptNum)
 
             case .exhausted:
                 session.globalState = .exhausted
@@ -144,6 +176,7 @@ class DualSiteWorkerService {
                 session.identityAction = .save
                 session.endTime = Date()
                 onLog("Worker \(sessionId): EXHAUSTED — 4x incorrect, no account", .error)
+                await captureTerminalScreenshots(joeEngine: joeEngine, ignEngine: ignEngine, joeAttempt: joeAttempt, ignAttempt: ignAttempt, sessionId: workerSessionId, email: credEmail, attemptNum: attemptNum, step: .finalState)
 
             case .uncertain:
                 if attemptNum >= config.maxAttemptsPerSite {
@@ -152,6 +185,7 @@ class DualSiteWorkerService {
                     session.identityAction = .save
                     session.endTime = Date()
                     onLog("Worker \(sessionId): UNCERTAIN after max attempts — marking no account", .warning)
+                    await captureTerminalScreenshots(joeEngine: joeEngine, ignEngine: ignEngine, joeAttempt: joeAttempt, ignAttempt: ignAttempt, sessionId: workerSessionId, email: credEmail, attemptNum: attemptNum, step: .finalState)
                 } else {
                     onLog("Worker \(sessionId): uncertain result on attempt \(attemptNum) — retrying", .warning)
                 }
@@ -259,6 +293,126 @@ class DualSiteWorkerService {
         case .timeout: "Timed out"
         case .redBannerError: "Red banner error"
         case .smsDetected: "SMS notification detected"
+        }
+    }
+
+    private func captureUnifiedScreenshot(
+        from debugShot: PPSRDebugScreenshot,
+        sessionId: String,
+        credentialEmail: String,
+        site: String,
+        attemptNumber: Int
+    ) async {
+        let step = mapStepName(debugShot.stepName)
+        await screenshotManager.addScreenshot(
+            image: debugShot.image,
+            sessionId: sessionId,
+            credentialEmail: credentialEmail,
+            site: site,
+            step: step,
+            attemptNumber: attemptNumber,
+            runVisionAnalysis: step.isCritical || debugShot.autoDetectedResult != .unknown
+        )
+    }
+
+    private func captureTerminalScreenshots(
+        joeEngine: LoginAutomationEngine,
+        ignEngine: LoginAutomationEngine,
+        joeAttempt: LoginAttempt,
+        ignAttempt: LoginAttempt,
+        sessionId: String,
+        email: String,
+        attemptNum: Int,
+        step: ScreenshotStep
+    ) async {
+        if let joeImg = joeAttempt.responseSnapshot {
+            await screenshotManager.addScreenshot(
+                image: joeImg,
+                sessionId: sessionId,
+                credentialEmail: email,
+                site: "joe",
+                step: step,
+                attemptNumber: attemptNum,
+                runVisionAnalysis: true
+            )
+        }
+        if let ignImg = ignAttempt.responseSnapshot {
+            await screenshotManager.addScreenshot(
+                image: ignImg,
+                sessionId: sessionId,
+                credentialEmail: email,
+                site: "ignition",
+                step: step,
+                attemptNumber: attemptNum,
+                runVisionAnalysis: true
+            )
+        }
+    }
+
+    private func capturePostAttemptScreenshots(
+        joeEngine: LoginAutomationEngine,
+        ignEngine: LoginAutomationEngine,
+        joeAttempt: LoginAttempt,
+        ignAttempt: LoginAttempt,
+        sessionId: String,
+        email: String,
+        attemptNum: Int
+    ) async {
+        if let joeImg = joeAttempt.responseSnapshot {
+            await screenshotManager.addScreenshot(
+                image: joeImg,
+                sessionId: sessionId,
+                credentialEmail: email,
+                site: "joe",
+                step: .postAttempt,
+                attemptNumber: attemptNum,
+                runVisionAnalysis: true
+            )
+        }
+        if let ignImg = ignAttempt.responseSnapshot {
+            await screenshotManager.addScreenshot(
+                image: ignImg,
+                sessionId: sessionId,
+                credentialEmail: email,
+                site: "ignition",
+                step: .postAttempt,
+                attemptNumber: attemptNum,
+                runVisionAnalysis: true
+            )
+        }
+    }
+
+    private func mapStepName(_ stepName: String) -> ScreenshotStep {
+        let lower = stepName.lowercased()
+        if lower.contains("terminal") || lower.contains("disabled") { return .terminalState }
+        if lower.contains("success") || lower.contains("welcome") { return .successDetected }
+        if lower.contains("error_banner") || lower.contains("red_banner") { return .errorBanner }
+        if lower.contains("sms") { return .smsDetected }
+        if lower.contains("blank") { return .blankPage }
+        if lower.contains("stuck") { return .recoveryAttempt }
+        if lower.contains("page_load") { return .pageLoad }
+        if lower.contains("no_field") || lower.contains("no_interactive") { return .fieldsDetected }
+        if lower.contains("post_login") || lower.contains("cycle") { return .responseDetected }
+        if lower.contains("submit") { return .postClick }
+        return .responseDetected
+    }
+
+    private func extractCycleNum(_ stepName: String) -> Int {
+        let parts = stepName.split(separator: "_")
+        for part in parts {
+            if let num = Int(part) { return num }
+        }
+        return 0
+    }
+
+    private func classificationToStep(_ classification: AttemptClassification) -> ScreenshotStep {
+        switch classification {
+        case .success: .successDetected
+        case .permBan: .terminalState
+        case .tempLock: .terminalState
+        case .continueLoop: .postAttempt
+        case .exhausted: .finalState
+        case .uncertain: .responseDetected
         }
     }
 }

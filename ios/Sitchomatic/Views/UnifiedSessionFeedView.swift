@@ -3,6 +3,7 @@ import UIKit
 
 struct UnifiedSessionFeedView: View {
     @State private var vm = UnifiedSessionViewModel.shared
+    @State private var screenshotManager = UnifiedScreenshotManager.shared
     @State private var showImportSheet: Bool = false
     @State private var showImportFromLogin: Bool = false
     @State private var importText: String = ""
@@ -11,6 +12,12 @@ struct UnifiedSessionFeedView: View {
     @State private var showExportSheet: Bool = false
     @State private var showClearConfirm: Bool = false
     @State private var showLogSheet: Bool = false
+    @State private var activeTab: DashboardTab = .sessions
+
+    nonisolated enum DashboardTab: String, CaseIterable, Sendable {
+        case sessions = "Sessions"
+        case screenshots = "Screenshots"
+    }
 
     nonisolated enum SessionFilterOption: String, CaseIterable, Identifiable, Sendable {
         case all = "All"
@@ -58,39 +65,13 @@ struct UnifiedSessionFeedView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if !vm.sessions.isEmpty {
-                    filterBar
-                }
+                dashboardTabPicker
 
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        statusHeader
-
-                        if vm.isRunning {
-                            AdaptiveConcurrencyDashboardView(engine: vm.adaptiveEngine)
-                            batchProgressCard
-                            batchControls
-                        }
-
-                        if !vm.isRunning {
-                            concurrencyCapControl
-                        }
-
-                        if vm.sessions.isEmpty {
-                            emptyState
-                        } else {
-                            statsRow
-
-                            ForEach(filteredSessions, id: \.id) { session in
-                                Button { selectedSession = session } label: {
-                                    PairedSessionTile(session: session)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 32)
+                switch activeTab {
+                case .sessions:
+                    sessionsContent
+                case .screenshots:
+                    UnifiedScreenshotFeedView()
                 }
             }
             .background(Color(.systemGroupedBackground))
@@ -136,6 +117,7 @@ struct UnifiedSessionFeedView: View {
         }
         .withMainMenuButton()
         .preferredColorScheme(.dark)
+        .sensoryFeedback(.selection, trigger: activeTab.rawValue)
         .sheet(item: $selectedSession) { session in
             UnifiedSessionDetailSheet(session: session, vm: vm)
         }
@@ -162,6 +144,86 @@ struct UnifiedSessionFeedView: View {
         }
         .onChange(of: vm.isRunning) { _, newValue in
             UIApplication.shared.isIdleTimerDisabled = newValue
+        }
+    }
+
+    private var dashboardTabPicker: some View {
+        HStack(spacing: 0) {
+            ForEach(DashboardTab.allCases, id: \.rawValue) { tab in
+                Button {
+                    withAnimation(.snappy(duration: 0.25)) { activeTab = tab }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: tab == .sessions ? "rectangle.stack" : "camera.viewfinder")
+                            .font(.system(size: 12, weight: .bold))
+                        Text(tab.rawValue)
+                            .font(.system(.caption, design: .monospaced, weight: .heavy))
+                        if tab == .screenshots && screenshotManager.screenshots.count > 0 {
+                            Text("\(screenshotManager.screenshots.count)")
+                                .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                                .padding(.horizontal, 5).padding(.vertical, 1)
+                                .background(activeTab == tab ? .white.opacity(0.2) : .primary.opacity(0.08))
+                                .clipShape(Capsule())
+                                .contentTransition(.numericText())
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(activeTab == tab ? tabColor(tab) : Color(.tertiarySystemGroupedBackground))
+                    .foregroundStyle(activeTab == tab ? .white : .secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .clipShape(.rect(cornerRadius: 10))
+        .padding(.horizontal)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+
+    private func tabColor(_ tab: DashboardTab) -> Color {
+        switch tab {
+        case .sessions: .cyan.opacity(0.8)
+        case .screenshots: .indigo.opacity(0.8)
+        }
+    }
+
+    private var sessionsContent: some View {
+        VStack(spacing: 0) {
+            if !vm.sessions.isEmpty {
+                filterBar
+            }
+
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    statusHeader
+
+                    if vm.isRunning {
+                        AdaptiveConcurrencyDashboardView(engine: vm.adaptiveEngine)
+                        batchProgressCard
+                        batchControls
+                    }
+
+                    if !vm.isRunning {
+                        concurrencyCapControl
+                    }
+
+                    if vm.sessions.isEmpty {
+                        emptyState
+                    } else {
+                        statsRow
+
+                        ForEach(filteredSessions, id: \.id) { session in
+                            Button { selectedSession = session } label: {
+                                PairedSessionTile(session: session)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 32)
+            }
         }
     }
 
