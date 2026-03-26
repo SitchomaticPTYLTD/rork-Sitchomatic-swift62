@@ -253,10 +253,10 @@ nonisolated struct UnifiedSystemConfig: Codable, Sendable {
     let humanEmulation: HumanEmulationConfig
 
     static let defaultConfig = UnifiedSystemConfig(
-        systemVersion: "4.1",
+        systemVersion: "4.2",
         concurrencyLimit: 4,
         maxAttemptsPerSite: 4,
-        earlyStopTriggers: ["disabled", "closed", "restricted"],
+        earlyStopTriggers: ["has been disabled", "temporarily disabled"],
         sites: [.joefortune, .ignition],
         humanEmulation: .default
     )
@@ -280,7 +280,7 @@ nonisolated struct HumanEmulationConfig: Codable, Sendable {
 
 nonisolated struct TerminationLogic: Sendable {
     static let successTriggers = ["lobby", "Welcome", "session_id"]
-    static let permStopTriggers = ["has been disabled", "permanently closed", "restricted"]
-    static let tempStopTriggers = ["temporarily disabled", "too many attempts", "try again later"]
+    static let permStopTriggers = ["has been disabled"]
+    static let tempStopTriggers = ["temporarily disabled"]
     static let continueTriggers = ["incorrect password", "incorrect"]
 }

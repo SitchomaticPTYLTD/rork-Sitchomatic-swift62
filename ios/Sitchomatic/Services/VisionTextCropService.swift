@@ -45,38 +45,17 @@ class VisionTextCropService {
 
     private let crucialKeywords: [String] = [
         "incorrect password", "incorrect", "wrong password", "invalid",
-        "has been disabled", "permanently closed", "permanently disabled",
-        "account is disabled", "account has been disabled", "suspended",
-        "temporarily disabled", "temporarily locked", "too many attempts",
-        "try again later", "try again in", "exceeded login attempts",
+        "has been disabled",
+        "temporarily disabled",
         "welcome", "dashboard", "my account", "balance", "deposit",
         "logout", "log out", "successfully", "logged in",
-        "error", "failed", "blocked", "restricted", "banned",
+        "error", "failed",
         "sms", "verification code", "verify your phone", "enter the code",
-        "contact customer", "self-excluded", "account is closed",
     ]
 
     private let outcomePatterns: [(pattern: String, outcome: DetectedOutcome)] = [
         ("has been disabled", .permDisabled),
-        ("permanently closed", .permDisabled),
-        ("permanently disabled", .permDisabled),
-        ("account is disabled", .permDisabled),
-        ("account has been disabled", .permDisabled),
-        ("account has been suspended", .permDisabled),
-        ("self-excluded", .permDisabled),
-        ("account is closed", .permDisabled),
-        ("account is restricted", .permDisabled),
-        ("blacklisted", .permDisabled),
-        ("contact customer", .permDisabled),
         ("temporarily disabled", .tempDisabled),
-        ("temporarily locked", .tempDisabled),
-        ("temporarily suspended", .tempDisabled),
-        ("too many attempts", .tempDisabled),
-        ("too many login attempts", .tempDisabled),
-        ("try again later", .tempDisabled),
-        ("try again in", .tempDisabled),
-        ("exceeded login attempts", .tempDisabled),
-        ("multiple failed attempts", .tempDisabled),
         ("incorrect password", .incorrectPassword),
         ("wrong password", .incorrectPassword),
         ("invalid password", .incorrectPassword),
@@ -156,11 +135,6 @@ class VisionTextCropService {
 
         if crucialMatches.isEmpty {
             let weakSignals: [(String, DetectedOutcome, Double)] = [
-                ("disabled", .permDisabled, 0.5),
-                ("suspended", .permDisabled, 0.5),
-                ("blocked", .permDisabled, 0.4),
-                ("banned", .permDisabled, 0.5),
-                ("locked", .tempDisabled, 0.4),
                 ("error", .errorBanner, 0.3),
             ]
             for (term, outcome, conf) in weakSignals {

@@ -47,14 +47,8 @@ class TrueDetectionService {
         var submitSelector: String = "#login-submit"
         var successMarkers: [String] = ["balance", "wallet", "my account", "logout"]
         var terminalKeywords: [String] = [
-            "temporarily disabled", "account is disabled",
-            "account has been disabled", "has been disabled",
-            "account has been suspended", "has been suspended",
-            "account has been blocked", "has been blocked",
-            "account has been deactivated", "permanently banned",
-            "account is closed", "self-excluded",
-            "contact customer service", "contact support",
-            "your account is locked", "account is restricted"
+            "temporarily disabled",
+            "has been disabled"
         ]
         var errorBannerSelectors: [String] = [".error-banner", ".alert-danger", ".alert-error", ".login-error", ".notification-error", "[role='alert']"]
     }
@@ -464,15 +458,15 @@ class TrueDetectionService {
         let pageContent = await session.getPageContent()
         let contentLower = pageContent.lowercased()
 
-        for keyword in config.terminalKeywords {
-            if contentLower.contains(keyword.lowercased()) {
-                onLog?("TRUE DETECTION: TERMINAL keyword detected — '\(keyword)'", .error)
-                logger.log("TrueDetection: TERMINAL keyword '\(keyword)'", category: .evaluation, level: .critical, sessionId: sessionId)
-                if keyword.contains("temporarily") {
-                    return .temporarilyDisabled
-                }
-                return .accountDisabled
-            }
+        if contentLower.contains("temporarily disabled") {
+            onLog?("TRUE DETECTION: TERMINAL keyword detected — 'temporarily disabled'", .error)
+            logger.log("TrueDetection: TERMINAL keyword 'temporarily disabled'", category: .evaluation, level: .critical, sessionId: sessionId)
+            return .temporarilyDisabled
+        }
+        if contentLower.contains("has been disabled") {
+            onLog?("TRUE DETECTION: TERMINAL keyword detected — 'has been disabled'", .error)
+            logger.log("TrueDetection: TERMINAL keyword 'has been disabled'", category: .evaluation, level: .critical, sessionId: sessionId)
+            return .accountDisabled
         }
 
         let isIgnitionSite = (await session.getCurrentURL()).lowercased().contains("ignition")

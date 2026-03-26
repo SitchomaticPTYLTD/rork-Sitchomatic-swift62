@@ -8,8 +8,9 @@ struct ScreenshotAlbum: Identifiable {
 
     var title: String { cardDisplayNumber.isEmpty ? "Unknown Card" : cardDisplayNumber }
     var latestTimestamp: Date { screenshots.first?.timestamp ?? .distantPast }
-    var passCount: Int { screenshots.filter { $0.effectiveResult == .markedPass }.count }
-    var failCount: Int { screenshots.filter { $0.effectiveResult == .markedFail }.count }
+    var successCount: Int { screenshots.filter { $0.effectiveResult == .success }.count }
+    var noAccCount: Int { screenshots.filter { $0.effectiveResult == .noAcc || $0.effectiveResult == .permDisabled || $0.effectiveResult == .tempDisabled }.count }
+    var unsureCount: Int { screenshots.filter { $0.effectiveResult == .unsure || $0.effectiveResult == .none }.count }
 
     var overallResult: UserResultOverride {
         let finals = screenshots.filter { $0.stepName.contains("final") || $0.stepName.contains("response") }
@@ -115,11 +116,14 @@ struct AlbumCard: View {
                 HStack(spacing: 12) {
                     Label("\(album.screenshots.count) tests", systemImage: "doc.text")
                     Spacer()
-                    if album.passCount > 0 {
-                        HStack(spacing: 2) { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green); Text("\(album.passCount)") }
+                    if album.successCount > 0 {
+                        HStack(spacing: 2) { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green); Text("\(album.successCount)") }
                     }
-                    if album.failCount > 0 {
-                        HStack(spacing: 2) { Image(systemName: "xmark.circle.fill").foregroundStyle(.red); Text("\(album.failCount)") }
+                    if album.noAccCount > 0 {
+                        HStack(spacing: 2) { Image(systemName: "xmark.circle.fill").foregroundStyle(.red); Text("\(album.noAccCount)") }
+                    }
+                    if album.unsureCount > 0 {
+                        HStack(spacing: 2) { Image(systemName: "questionmark.diamond.fill").foregroundStyle(.yellow); Text("\(album.unsureCount)") }
                     }
                 }
                 .font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
@@ -217,7 +221,7 @@ struct ScreenshotCard: View {
                     if screenshot.hasUserOverride {
                         Text(screenshot.overrideLabel)
                             .font(.system(.caption2, design: .monospaced, weight: .bold))
-                            .foregroundStyle(screenshot.userOverride == .markedPass ? .green : .red)
+                            .foregroundStyle(screenshot.userOverride.color)
                     }
                 }
                 .font(.system(.caption2, design: .monospaced)).foregroundStyle(.tertiary)
@@ -269,8 +273,7 @@ struct ScreenshotCorrectionSheet: View {
                 Button("Confirm") { vm.correctResult(for: screenshot, override: pendingOverride) }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                let label = pendingOverride == .markedPass ? "PASS" : "FAIL"
-                Text("Mark this as \(label)?")
+                Text("Mark this as \(pendingOverride.displayLabel)?")
             }
             .alert("Retest Card", isPresented: $showRetestConfirmation) {
                 Button("Add to Queue") { vm.requeueCardFromScreenshot(screenshot); dismiss() }
@@ -288,8 +291,8 @@ struct ScreenshotCorrectionSheet: View {
 
             if screenshot.hasUserOverride {
                 HStack(spacing: 8) {
-                    Image(systemName: screenshot.userOverride == .markedPass ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(screenshot.userOverride == .markedPass ? .green : .red)
+                    Image(systemName: screenshot.userOverride.icon)
+                        .foregroundStyle(screenshot.userOverride.color)
                     Text("You marked this as: \(screenshot.overrideLabel)").font(.subheadline.weight(.medium))
                     Spacer()
                     Button("Reset") { vm.resetScreenshotOverride(screenshot) }.font(.caption.weight(.semibold)).foregroundStyle(.secondary)
@@ -297,24 +300,19 @@ struct ScreenshotCorrectionSheet: View {
                 .padding(12).background(Color(.tertiarySystemGroupedBackground)).clipShape(.rect(cornerRadius: 10))
             }
 
-            HStack(spacing: 8) {
-                Button { pendingOverride = .markedPass; showConfirmCorrection = true } label: {
-                    Label("Pass", systemImage: "checkmark.circle.fill").font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(screenshot.userOverride == .markedPass ? Color.green : Color.green.opacity(0.15))
-                        .foregroundStyle(screenshot.userOverride == .markedPass ? .white : .green)
-                        .clipShape(.rect(cornerRadius: 10))
-                }
-                Button { pendingOverride = .markedFail; showConfirmCorrection = true } label: {
-                    Label("Fail", systemImage: "xmark.circle.fill").font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(screenshot.userOverride == .markedFail ? Color.red : Color.red.opacity(0.15))
-                        .foregroundStyle(screenshot.userOverride == .markedFail ? .white : .red)
-                        .clipShape(.rect(cornerRadius: 10))
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(UserResultOverride.overrideable, id: \.self) { result in
+                    Button { pendingOverride = result; showConfirmCorrection = true } label: {
+                        Label(result.displayLabel, systemImage: result.icon).font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity).padding(.vertical, 10)
+                            .background(screenshot.userOverride == result ? result.color : result.color.opacity(0.15))
+                            .foregroundStyle(screenshot.userOverride == result ? .white : result.color)
+                            .clipShape(.rect(cornerRadius: 10))
+                    }
                 }
                 Button { showRetestConfirmation = true } label: {
                     Label("Retest", systemImage: "arrow.clockwise.circle.fill").font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .frame(maxWidth: .infinity).padding(.vertical, 10)
                         .background(Color.orange.opacity(0.15)).foregroundStyle(.orange).clipShape(.rect(cornerRadius: 10))
                 }
             }

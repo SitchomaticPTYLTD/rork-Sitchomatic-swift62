@@ -75,14 +75,17 @@ class LoginCredential: Identifiable {
         testResults.insert(result, at: 0)
         if success {
             status = .working
-        } else if detail?.lowercased().contains("perm disabled") == true || detail?.lowercased().contains("permanently") == true || detail?.lowercased().contains("blacklist") == true {
-            status = .permDisabled
-        } else if detail?.lowercased().contains("temp disabled") == true || detail?.lowercased().contains("temporarily") == true {
-            status = .tempDisabled
-        } else if detail?.lowercased().contains("no account") == true || detail?.lowercased().contains("incorrect") == true {
-            status = .noAcc
         } else {
-            status = .unsure
+            let detailLower = detail?.lowercased() ?? ""
+            if detailLower.contains("has been disabled") {
+                status = .permDisabled
+            } else if detailLower.contains("temporarily disabled") {
+                status = .tempDisabled
+            } else if detailLower.contains("no account") || detailLower.contains("incorrect") || detailLower.contains("no acc") {
+                status = .noAcc
+            } else {
+                status = .unsure
+            }
         }
     }
 

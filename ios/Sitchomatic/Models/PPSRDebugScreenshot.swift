@@ -1,11 +1,52 @@
 import Foundation
 import Observation
 import UIKit
+import SwiftUI
 
-nonisolated enum UserResultOverride: String, Sendable {
+nonisolated enum UserResultOverride: String, Sendable, CaseIterable {
     case none
-    case markedPass
-    case markedFail
+    case success
+    case noAcc
+    case permDisabled
+    case tempDisabled
+    case unsure
+
+    var displayLabel: String {
+        switch self {
+        case .none: "Auto"
+        case .success: "Success"
+        case .noAcc: "No Acc"
+        case .permDisabled: "Perm Disabled"
+        case .tempDisabled: "Temp Disabled"
+        case .unsure: "Unsure"
+        }
+    }
+
+    var color: SwiftUI.Color {
+        switch self {
+        case .none: .gray
+        case .success: .green
+        case .noAcc: .secondary
+        case .permDisabled: .red
+        case .tempDisabled: .orange
+        case .unsure: .yellow
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .none: "questionmark.circle"
+        case .success: "checkmark.circle.fill"
+        case .noAcc: "xmark.circle.fill"
+        case .permDisabled: "lock.slash.fill"
+        case .tempDisabled: "clock.badge.exclamationmark"
+        case .unsure: "questionmark.diamond.fill"
+        }
+    }
+
+    static var overrideable: [UserResultOverride] {
+        [.success, .noAcc, .permDisabled, .tempDisabled, .unsure]
+    }
 }
 
 @Observable
@@ -25,9 +66,34 @@ class PPSRDebugScreenshot: Identifiable {
     var userNote: String = ""
 
     nonisolated enum AutoDetectedResult: String, Sendable {
-        case pass
-        case fail
+        case success
+        case noAcc
+        case permDisabled
+        case tempDisabled
+        case unsure
         case unknown
+
+        var displayLabel: String {
+            switch self {
+            case .success: "Success"
+            case .noAcc: "No Acc"
+            case .permDisabled: "Perm Disabled"
+            case .tempDisabled: "Temp Disabled"
+            case .unsure: "Unsure"
+            case .unknown: "Unknown"
+            }
+        }
+
+        var toOverride: UserResultOverride {
+            switch self {
+            case .success: .success
+            case .noAcc: .noAcc
+            case .permDisabled: .permDisabled
+            case .tempDisabled: .tempDisabled
+            case .unsure: .unsure
+            case .unknown: .none
+            }
+        }
     }
 
     var albumKey: String {
@@ -40,11 +106,7 @@ class PPSRDebugScreenshot: Identifiable {
 
     var effectiveResult: UserResultOverride {
         if userOverride != .none { return userOverride }
-        switch autoDetectedResult {
-        case .pass: return .markedPass
-        case .fail: return .markedFail
-        case .unknown: return .none
-        }
+        return autoDetectedResult.toOverride
     }
 
     var displayImage: UIImage {
@@ -74,10 +136,6 @@ class PPSRDebugScreenshot: Identifiable {
     }
 
     var overrideLabel: String {
-        switch userOverride {
-        case .none: "Auto"
-        case .markedPass: "Marked Pass"
-        case .markedFail: "Marked Fail"
-        }
+        userOverride == .none ? "Auto" : "Override: \(userOverride.displayLabel)"
     }
 }

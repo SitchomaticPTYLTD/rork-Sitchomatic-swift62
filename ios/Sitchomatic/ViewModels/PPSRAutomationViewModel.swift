@@ -670,11 +670,10 @@ class PPSRAutomationViewModel {
             return
         }
 
-        let isPass = override == .markedPass
+        let isPass = override == .success
         card.applyCorrection(success: isPass)
 
-        let label = isPass ? "PASS" : "FAIL"
-        log("Debug correction: \(card.brand.rawValue) \(card.number) marked as \(label) by user", level: isPass ? .success : .error)
+        log("Debug correction: \(card.brand.rawValue) \(card.number) marked as \(override.displayLabel) by user", level: isPass ? .success : .warning)
         persistCards()
     }
 

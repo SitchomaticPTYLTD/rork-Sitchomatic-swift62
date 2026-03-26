@@ -707,7 +707,7 @@ class LoginAutomationEngine {
                 logger.log("Retry field verification: \(retryVerification.found)/2", category: .automation, level: retryVerification.found > 0 ? .info : .error, sessionId: sessionId)
                 if retryVerification.found == 0 {
                     failAttempt(attempt, message: "FATAL: No login fields found after extended wait")
-                    await captureDebugScreenshot(session: session, attempt: attempt, step: "no_fields", note: "No login fields found", autoResult: .fail)
+                    await captureDebugScreenshot(session: session, attempt: attempt, step: "no_fields", note: "No login fields found", autoResult: .unsure)
                     return .connectionFailure
                 }
             }
@@ -953,7 +953,7 @@ class LoginAutomationEngine {
                 if !legacySubmitOK && cycle == 1 {
                     patternLearning.recordAttempt(url: targetURLString, pattern: selectedPattern, fillSuccess: patternResult.usernameFilled && patternResult.passwordFilled, submitSuccess: false, loginOutcome: "submit_failed", responseTimeMs: patternMs ?? 0, submitMethod: patternResult.submitMethod)
                     failAttempt(attempt, message: "LOGIN SUBMIT FAILED after pattern + legacy attempts")
-                    await captureDebugScreenshot(session: session, attempt: attempt, step: "submit_failed", note: "All submit strategies failed", autoResult: .fail)
+                    await captureDebugScreenshot(session: session, attempt: attempt, step: "submit_failed", note: "All submit strategies failed", autoResult: .unsure)
                     return .connectionFailure
                 }
                 if !legacySubmitOK {
@@ -964,8 +964,9 @@ class LoginAutomationEngine {
             }
 
             let preSubmitURL = await session.getCurrentURL()
-            let responseTimeout = TimeoutResolver.resolveAutomationTimeout(automationSettings.waitForResponseSeconds)
-            attempt.logs.append(PPSRLogEntry(message: "Cycle \(cycle): waiting up to \(Int(responseTimeout))s for response...", level: .info))
+            let baseTimeout = automationSettings.waitForResponseSeconds
+            let responseTimeout = TimeoutResolver.resolveAutomationTimeout(cycle == 1 ? max(baseTimeout, 25) : baseTimeout)
+            attempt.logs.append(PPSRLogEntry(message: "Cycle \(cycle): waiting up to \(Int(responseTimeout))s for response\(cycle == 1 ? " (extended first-press timeout)" : "")...", level: .info))
 
             logger.startTimer(key: "\(sessionId)_poll_\(cycle)")
             let pollResult = await session.rapidWelcomePoll(timeout: responseTimeout, originalURL: preSubmitURL)
@@ -1093,8 +1094,11 @@ class LoginAutomationEngine {
 
             let autoResult: PPSRDebugScreenshot.AutoDetectedResult
             switch evaluation.outcome {
-            case .success: autoResult = .pass
-            case .noAcc, .permDisabled, .tempDisabled: autoResult = .fail
+            case .success: autoResult = .success
+            case .noAcc: autoResult = .noAcc
+            case .permDisabled: autoResult = .permDisabled
+            case .tempDisabled: autoResult = .tempDisabled
+            case .unsure: autoResult = .unsure
             default: autoResult = .unknown
             }
 
@@ -1132,13 +1136,13 @@ class LoginAutomationEngine {
             case .tempDisabled:
                 attempt.logs.append(PPSRLogEntry(message: "TEMP DISABLED on cycle \(cycle): \(evaluation.reason) — FINAL RESULT", level: .warning))
                 failAttempt(attempt, message: "Account temporarily disabled: \(evaluation.reason)")
-                await captureTerminalScreenshot(session: session, attempt: attempt, step: "temp_disabled", note: "TEMP DISABLED: \(evaluation.reason)", autoResult: .fail, terminalType: .temporarilyDisabled)
+                await captureTerminalScreenshot(session: session, attempt: attempt, step: "temp_disabled", note: "TEMP DISABLED: \(evaluation.reason)", autoResult: .tempDisabled, terminalType: .temporarilyDisabled)
                 return .tempDisabled
 
             case .permDisabled:
                 attempt.logs.append(PPSRLogEntry(message: "PERM DISABLED on cycle \(cycle): \(evaluation.reason) — FINAL RESULT (immediate)", level: .error))
                 failAttempt(attempt, message: "Account permanently disabled/blacklisted: \(evaluation.reason)")
-                await captureTerminalScreenshot(session: session, attempt: attempt, step: "perm_disabled", note: "PERM DISABLED: \(evaluation.reason)", autoResult: .fail, terminalType: .accountDisabled)
+                await captureTerminalScreenshot(session: session, attempt: attempt, step: "perm_disabled", note: "PERM DISABLED: \(evaluation.reason)", autoResult: .permDisabled, terminalType: .accountDisabled)
                 return .permDisabled
 
             case .noAcc:
@@ -1293,54 +1297,15 @@ class LoginAutomationEngine {
         // --- DISABLED signals (blocked/banned) ---
 
         var temporarilyLocked = false
-        let tempLockTerms = [
-            "temporarily", "temporary lock", "temporarily locked",
-            "temporarily disabled", "temporarily suspended",
-            "temporarily blocked", "too many attempts",
-            "too many login attempts", "too many failed",
-            "try again later", "try again in", "account temporarily",
-            "locked for", "wait before", "exceeded login attempts",
-            "multiple failed attempts", "login attempts exceeded",
-        ]
-        for term in tempLockTerms {
-            if contentLower.contains(term) {
-                temporarilyLocked = true
-                disabledScore += 40
-                disabledSignals.append("+40 TEMP_LOCK '\(term)'")
-                break
-            }
+        if contentLower.contains("temporarily disabled") {
+            temporarilyLocked = true
+            disabledScore += 200
+            disabledSignals.append("+200 TEMP_LOCK 'temporarily disabled' (100% weight strict match)")
         }
 
-        let strongDisabledTerms: [(String, Int)] = [
-            ("account has been disabled", 200), ("account has been suspended", 60),
-            ("account has been blocked", 60), ("account has been deactivated", 60),
-            ("your account has been disabled", 200), ("your account is disabled", 200),
-            ("account is disabled", 200),
-            ("has been disabled", 55), ("has been suspended", 55),
-            ("has been blocked", 55), ("has been deactivated", 55),
-            ("your account is locked", 55), ("account is restricted", 50),
-            ("permanently banned", 60), ("permanently disabled", 60),
-            ("blacklisted", 50), ("contact customer service", 30), ("contact support", 15),
-            ("account is closed", 55), ("self-excluded", 40),
-            ("please, contact customer", 35), ("contact customer", 25),
-        ]
-        for (term, weight) in strongDisabledTerms {
-            if contentLower.contains(term) {
-                disabledScore += weight
-                disabledSignals.append("+\(weight) '\(term)'")
-            }
-        }
-
-        let weakDisabledTerms: [(String, Int)] = [
-            ("disabled", 12), ("suspended", 15), ("blocked", 12),
-            ("banned", 15), ("locked", 12), ("restricted", 10),
-            ("deactivated", 15),
-        ]
-        for (term, weight) in weakDisabledTerms {
-            if contentLower.contains(term) {
-                disabledScore += weight
-                disabledSignals.append("+\(weight) '\(term)'")
-            }
+        if contentLower.contains("has been disabled") {
+            disabledScore += 200
+            disabledSignals.append("+200 PERM_DISABLED 'has been disabled' (100% weight strict match)")
         }
 
         // --- FALSE POSITIVE guards ---
@@ -1480,8 +1445,10 @@ class LoginAutomationEngine {
             logger.log("OCR DISABLED DETECTION on screenshot: \(ocrDisabledCheck.type.rawValue) — '\(ocrDisabledCheck.matchedText ?? "unknown")'" , category: .evaluation, level: .critical)
             if ocrDisabledCheck.type == .smsDetected {
                 finalAutoResult = .unknown
+            } else if ocrDisabledCheck.type == .tempDisabled {
+                finalAutoResult = .tempDisabled
             } else {
-                finalAutoResult = .fail
+                finalAutoResult = .permDisabled
             }
         }
 

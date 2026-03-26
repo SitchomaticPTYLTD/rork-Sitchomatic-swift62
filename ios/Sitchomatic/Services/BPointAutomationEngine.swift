@@ -288,7 +288,7 @@ class BPointAutomationEngine {
             await session.fillCardNumber(check.card.number)
         }
         guard cardResult else {
-            await captureScreenshotForCheck(session: session, check: check, step: "card_fill_failed", note: "Card fill failed", autoResult: .fail)
+            await captureScreenshotForCheck(session: session, check: check, step: "card_fill_failed", note: "Card fill failed", autoResult: .unsure)
             return .connectionFailure
         }
         await speedDelay(milliseconds: 300)
@@ -314,7 +314,7 @@ class BPointAutomationEngine {
             await session.fillCVV(check.cvv)
         }
         guard cvvResult else {
-            await captureScreenshotForCheck(session: session, check: check, step: "cvv_fill_failed", note: "CVV fill failed", autoResult: .fail)
+            await captureScreenshotForCheck(session: session, check: check, step: "cvv_fill_failed", note: "CVV fill failed", autoResult: .unsure)
             return .connectionFailure
         }
         guard !isTimedOut(deadline) else { return .timeout }
@@ -339,7 +339,7 @@ class BPointAutomationEngine {
 
         guard submitResult.success else {
             failCheck(check, message: "SUBMIT FAILED after 3 attempts: \(submitResult.detail)")
-            await captureScreenshotForCheck(session: session, check: check, step: "submit_failed", note: "Submit failed", autoResult: .fail)
+            await captureScreenshotForCheck(session: session, check: check, step: "submit_failed", note: "Submit failed", autoResult: .unsure)
             return .connectionFailure
         }
 
@@ -388,8 +388,8 @@ class BPointAutomationEngine {
 
         let autoResult: PPSRDebugScreenshot.AutoDetectedResult
         switch evaluation.outcome {
-        case .failInstitution: autoResult = .fail
-        case .pass: autoResult = .pass
+        case .failInstitution: autoResult = .noAcc
+        case .pass: autoResult = .success
         default: autoResult = .unknown
         }
         await captureScreenshotForCheck(session: session, check: check, step: "post_submit_result", note: "Score: \(evaluation.score) | \(evaluation.reason)", autoResult: autoResult)

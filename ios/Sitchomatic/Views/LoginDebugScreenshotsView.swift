@@ -272,17 +272,31 @@ struct LoginDebugScreenshotsView: View {
                             Section("Quick Actions") {
                                 Button {
                                     if let shot = album.screenshots.first {
-                                        vm.correctResult(for: shot, override: .markedPass)
+                                        vm.correctResult(for: shot, override: .success)
                                     }
                                 } label: {
-                                    Label("Mark All Pass", systemImage: "checkmark.circle.fill")
+                                    Label("Mark Success", systemImage: "checkmark.circle.fill")
                                 }
                                 Button {
                                     if let shot = album.screenshots.first {
-                                        vm.correctResult(for: shot, override: .markedFail)
+                                        vm.correctResult(for: shot, override: .noAcc)
                                     }
                                 } label: {
-                                    Label("Mark All Fail", systemImage: "xmark.circle.fill")
+                                    Label("Mark No Acc", systemImage: "xmark.circle.fill")
+                                }
+                                Button {
+                                    if let shot = album.screenshots.first {
+                                        vm.correctResult(for: shot, override: .permDisabled)
+                                    }
+                                } label: {
+                                    Label("Mark Perm Disabled", systemImage: "lock.slash.fill")
+                                }
+                                Button {
+                                    if let shot = album.screenshots.first {
+                                        vm.correctResult(for: shot, override: .tempDisabled)
+                                    }
+                                } label: {
+                                    Label("Mark Temp Disabled", systemImage: "clock.badge.exclamationmark")
                                 }
                                 Button {
                                     if let shot = album.screenshots.first {
@@ -335,9 +349,11 @@ struct LoginScreenshotAlbum: Identifiable {
 
     var title: String { credentialUsername.isEmpty ? "Unknown" : credentialUsername }
     var latestTimestamp: Date { screenshots.first?.timestamp ?? .distantPast }
-    var passCount: Int { screenshots.filter { $0.effectiveResult == .markedPass }.count }
-    var failCount: Int { screenshots.filter { $0.effectiveResult == .markedFail }.count }
-    var unknownCount: Int { screenshots.filter { $0.effectiveResult == .none }.count }
+    var successCount: Int { screenshots.filter { $0.effectiveResult == .success }.count }
+    var noAccCount: Int { screenshots.filter { $0.effectiveResult == .noAcc }.count }
+    var permDisabledCount: Int { screenshots.filter { $0.effectiveResult == .permDisabled }.count }
+    var tempDisabledCount: Int { screenshots.filter { $0.effectiveResult == .tempDisabled }.count }
+    var unsureCount: Int { screenshots.filter { $0.effectiveResult == .unsure || $0.effectiveResult == .none }.count }
     var overrideCount: Int { screenshots.filter { $0.hasUserOverride }.count }
     var aiDetectedCount: Int { screenshots.filter { $0.autoDetectedResult != .unknown }.count }
 
@@ -411,14 +427,20 @@ struct LoginAlbumCard: View {
                 }
 
                 HStack(spacing: 6) {
-                    if album.passCount > 0 {
-                        miniStat(icon: "checkmark.circle.fill", count: album.passCount, color: .green)
+                    if album.successCount > 0 {
+                        miniStat(icon: "checkmark.circle.fill", count: album.successCount, color: .green)
                     }
-                    if album.failCount > 0 {
-                        miniStat(icon: "xmark.circle.fill", count: album.failCount, color: .red)
+                    if album.noAccCount > 0 {
+                        miniStat(icon: "xmark.circle.fill", count: album.noAccCount, color: .secondary)
                     }
-                    if album.unknownCount > 0 {
-                        miniStat(icon: "questionmark.circle.fill", count: album.unknownCount, color: .orange)
+                    if album.permDisabledCount > 0 {
+                        miniStat(icon: "lock.slash.fill", count: album.permDisabledCount, color: .red)
+                    }
+                    if album.tempDisabledCount > 0 {
+                        miniStat(icon: "clock.badge.exclamationmark", count: album.tempDisabledCount, color: .orange)
+                    }
+                    if album.unsureCount > 0 {
+                        miniStat(icon: "questionmark.diamond.fill", count: album.unsureCount, color: .yellow)
                     }
                     if album.overrideCount > 0 {
                         miniStat(icon: "hand.point.up.left.fill", count: album.overrideCount, color: .cyan)
@@ -467,22 +489,10 @@ struct LoginAlbumCard: View {
     }
 
     private func resultBadge(for screenshot: PPSRDebugScreenshot) -> some View {
-        Group {
-            switch screenshot.effectiveResult {
-            case .markedPass:
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title3).foregroundStyle(.green)
-                    .padding(4).background(.ultraThinMaterial).clipShape(Circle())
-            case .markedFail:
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3).foregroundStyle(.red)
-                    .padding(4).background(.ultraThinMaterial).clipShape(Circle())
-            case .none:
-                Image(systemName: "questionmark.circle.fill")
-                    .font(.title3).foregroundStyle(.orange)
-                    .padding(4).background(.ultraThinMaterial).clipShape(Circle())
-            }
-        }
+        let result = screenshot.effectiveResult
+        return Image(systemName: result.icon)
+            .font(.title3).foregroundStyle(result.color)
+            .padding(4).background(.ultraThinMaterial).clipShape(Circle())
     }
 }
 
@@ -517,15 +527,15 @@ struct LoginScreenshotCard: View {
                     if screenshot.hasUserOverride {
                         Text(screenshot.overrideLabel)
                             .font(.system(.caption2, design: .monospaced, weight: .bold))
-                            .foregroundStyle(screenshot.userOverride == .markedPass ? .green : .red)
+                            .foregroundStyle(screenshot.userOverride.color)
                     }
                     if screenshot.autoDetectedResult != .unknown {
                         HStack(spacing: 2) {
                             Image(systemName: "cpu").font(.system(size: 8))
-                            Text(screenshot.autoDetectedResult == .pass ? "AI:PASS" : "AI:FAIL")
+                            Text("AI:\(screenshot.autoDetectedResult.displayLabel.uppercased())")
                                 .font(.system(.caption2, design: .monospaced, weight: .bold))
                         }
-                        .foregroundStyle(screenshot.autoDetectedResult == .pass ? .green : .red)
+                        .foregroundStyle(screenshot.autoDetectedResult.toOverride.color)
                     }
                 }
                 .font(.system(.caption2, design: .monospaced)).foregroundStyle(.tertiary)
@@ -537,22 +547,10 @@ struct LoginScreenshotCard: View {
     }
 
     private var resultIndicator: some View {
-        Group {
-            switch screenshot.effectiveResult {
-            case .markedPass:
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title3).foregroundStyle(.green)
-                    .padding(4).background(.ultraThinMaterial).clipShape(Circle())
-            case .markedFail:
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3).foregroundStyle(.red)
-                    .padding(4).background(.ultraThinMaterial).clipShape(Circle())
-            case .none:
-                Image(systemName: "questionmark.circle.fill")
-                    .font(.title3).foregroundStyle(.orange)
-                    .padding(4).background(.ultraThinMaterial).clipShape(Circle())
-            }
-        }
+        let result = screenshot.effectiveResult
+        return Image(systemName: result.icon)
+            .font(.title3).foregroundStyle(result.color)
+            .padding(4).background(.ultraThinMaterial).clipShape(Circle())
     }
 }
 
@@ -624,42 +622,34 @@ struct LoginAlbumDetailSheet: View {
             }
 
             if let cred = credential {
-                HStack(spacing: 8) {
-                    Button {
-                        if let shot = album.screenshots.first {
-                            vm.correctResult(for: shot, override: .markedPass)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(UserResultOverride.overrideable, id: \.self) { result in
+                            Button {
+                                if let shot = album.screenshots.first {
+                                    vm.correctResult(for: shot, override: result)
+                                }
+                            } label: {
+                                Label(result.displayLabel, systemImage: result.icon)
+                                    .font(.caption.bold())
+                                    .padding(.horizontal, 8).padding(.vertical, 6)
+                                    .background(cred.status.rawValue == result.displayLabel ? result.color : result.color.opacity(0.12))
+                                    .foregroundStyle(cred.status.rawValue == result.displayLabel ? .white : result.color)
+                                    .clipShape(Capsule())
+                            }
                         }
-                    } label: {
-                        Label("Pass", systemImage: "checkmark.circle.fill")
-                            .font(.caption.bold())
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(cred.status == .working ? Color.green : Color.green.opacity(0.12))
-                            .foregroundStyle(cred.status == .working ? .white : .green)
-                            .clipShape(Capsule())
-                    }
-                    Button {
-                        if let shot = album.screenshots.first {
-                            vm.correctResult(for: shot, override: .markedFail)
+                        Button {
+                            if let shot = album.screenshots.first {
+                                vm.requeueCredentialFromScreenshot(shot)
+                            }
+                        } label: {
+                            Label("Retest", systemImage: "arrow.clockwise")
+                                .font(.caption.bold())
+                                .padding(.horizontal, 8).padding(.vertical, 6)
+                                .background(Color.orange.opacity(0.12))
+                                .foregroundStyle(.orange)
+                                .clipShape(Capsule())
                         }
-                    } label: {
-                        Label("Fail", systemImage: "xmark.circle.fill")
-                            .font(.caption.bold())
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(cred.status == .noAcc ? Color.red : Color.red.opacity(0.12))
-                            .foregroundStyle(cred.status == .noAcc ? .white : .red)
-                            .clipShape(Capsule())
-                    }
-                    Button {
-                        if let shot = album.screenshots.first {
-                            vm.requeueCredentialFromScreenshot(shot)
-                        }
-                    } label: {
-                        Label("Retest", systemImage: "arrow.clockwise")
-                            .font(.caption.bold())
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Color.orange.opacity(0.12))
-                            .foregroundStyle(.orange)
-                            .clipShape(Capsule())
                     }
                 }
             }
@@ -754,12 +744,11 @@ struct LoginAlbumDetailSheet: View {
                         } label: {
                             Label("Flipbook View", systemImage: "book.pages")
                         }
-                        Section("Override") {
-                            Button { vm.correctResult(for: screenshot, override: .markedPass) } label: {
-                                Label("Mark Pass", systemImage: "checkmark.circle.fill")
-                            }
-                            Button { vm.correctResult(for: screenshot, override: .markedFail) } label: {
-                                Label("Mark Fail", systemImage: "xmark.circle.fill")
+                        Section("Override Result") {
+                            ForEach(UserResultOverride.overrideable, id: \.self) { result in
+                                Button { vm.correctResult(for: screenshot, override: result) } label: {
+                                    Label(result.displayLabel, systemImage: result.icon)
+                                }
                             }
                             if screenshot.hasUserOverride {
                                 Button { vm.resetScreenshotOverride(screenshot) } label: {
@@ -823,8 +812,7 @@ struct LoginScreenshotCorrectionSheet: View {
                 Button("Confirm") { vm.correctResult(for: screenshot, override: pendingOverride) }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                let label = pendingOverride == .markedPass ? "PASS (Working Login)" : "FAIL (Dead Login)"
-                Text("Mark this credential as \(label)? This will update the credential status.")
+                Text("Mark this credential as \(pendingOverride.displayLabel)? This will update the credential status and apply to ALL screenshots for this credential.")
             }
             .alert("Retest Credential", isPresented: $showRetestConfirmation) {
                 Button("Add to Queue") { vm.requeueCredentialFromScreenshot(screenshot); dismiss() }
@@ -1170,25 +1158,12 @@ struct LoginScreenshotCorrectionSheet: View {
     }
 
     private var autoDetectionBadge: some View {
-        Group {
-            switch screenshot.autoDetectedResult {
-            case .pass:
-                Label("PASS", systemImage: "checkmark.circle.fill")
-                    .font(.caption.bold()).foregroundStyle(.green)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Color.green.opacity(0.12)).clipShape(Capsule())
-            case .fail:
-                Label("FAIL", systemImage: "xmark.circle.fill")
-                    .font(.caption.bold()).foregroundStyle(.red)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Color.red.opacity(0.12)).clipShape(Capsule())
-            case .unknown:
-                Label("UNCERTAIN", systemImage: "questionmark.circle.fill")
-                    .font(.caption.bold()).foregroundStyle(.orange)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Color.orange.opacity(0.12)).clipShape(Capsule())
-            }
-        }
+        let result = screenshot.autoDetectedResult
+        let override = result.toOverride
+        return Label(result.displayLabel.uppercased(), systemImage: override.icon)
+            .font(.caption.bold()).foregroundStyle(override.color)
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(override.color.opacity(0.12)).clipShape(Capsule())
     }
 
     private var correctionSection: some View {
@@ -1197,8 +1172,8 @@ struct LoginScreenshotCorrectionSheet: View {
 
             if screenshot.hasUserOverride {
                 HStack(spacing: 8) {
-                    Image(systemName: screenshot.userOverride == .markedPass ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(screenshot.userOverride == .markedPass ? .green : .red)
+                    Image(systemName: screenshot.userOverride.icon)
+                        .foregroundStyle(screenshot.userOverride.color)
                     Text("You marked this as: \(screenshot.overrideLabel)").font(.subheadline.weight(.medium))
                     Spacer()
                     Button("Reset") { vm.resetScreenshotOverride(screenshot) }.font(.caption.weight(.semibold)).foregroundStyle(.secondary)
@@ -1206,24 +1181,19 @@ struct LoginScreenshotCorrectionSheet: View {
                 .padding(12).background(Color(.tertiarySystemGroupedBackground)).clipShape(.rect(cornerRadius: 10))
             }
 
-            HStack(spacing: 8) {
-                Button { pendingOverride = .markedPass; showConfirmCorrection = true } label: {
-                    Label("Pass", systemImage: "checkmark.circle.fill").font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(screenshot.userOverride == .markedPass ? Color.green : Color.green.opacity(0.15))
-                        .foregroundStyle(screenshot.userOverride == .markedPass ? .white : .green)
-                        .clipShape(.rect(cornerRadius: 10))
-                }
-                Button { pendingOverride = .markedFail; showConfirmCorrection = true } label: {
-                    Label("Fail", systemImage: "xmark.circle.fill").font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(screenshot.userOverride == .markedFail ? Color.red : Color.red.opacity(0.15))
-                        .foregroundStyle(screenshot.userOverride == .markedFail ? .white : .red)
-                        .clipShape(.rect(cornerRadius: 10))
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(UserResultOverride.overrideable, id: \.self) { result in
+                    Button { pendingOverride = result; showConfirmCorrection = true } label: {
+                        Label(result.displayLabel, systemImage: result.icon).font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity).padding(.vertical, 10)
+                            .background(screenshot.userOverride == result ? result.color : result.color.opacity(0.15))
+                            .foregroundStyle(screenshot.userOverride == result ? .white : result.color)
+                            .clipShape(.rect(cornerRadius: 10))
+                    }
                 }
                 Button { showRetestConfirmation = true } label: {
                     Label("Retest", systemImage: "arrow.clockwise.circle.fill").font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .frame(maxWidth: .infinity).padding(.vertical, 10)
                         .background(Color.orange.opacity(0.15)).foregroundStyle(.orange).clipShape(.rect(cornerRadius: 10))
                 }
             }

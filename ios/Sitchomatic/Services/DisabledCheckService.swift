@@ -148,15 +148,7 @@ class DisabledCheckService {
                 pageContent = await session.getPageContent()
                 let contentLower = pageContent.lowercased()
                 let disabledPhrases = [
-                    "currently disabled", "account is currently disabled",
-                    "account has been disabled", "has been disabled",
-                    "account is disabled", "your account has been disabled",
-                    "account has been suspended", "has been suspended",
-                    "account has been blocked", "has been blocked",
-                    "account has been deactivated", "permanently banned",
-                    "account is closed", "self-excluded",
-                    "contact customer service", "your account is locked",
-                    "account is restricted"
+                    "has been disabled"
                 ]
                 for phrase in disabledPhrases {
                     if contentLower.contains(phrase) {

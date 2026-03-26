@@ -257,12 +257,12 @@ class PPSRAutomationEngine {
 
                 if !retryReady.ready && retryReady.fieldsFound == 0 {
                     failCheck(check, message: "FATAL: No form fields found after reload and extended wait")
-                    await captureScreenshotForCheck(session: session, check: check, step: "no_fields", note: "No fields after reload", autoResult: .fail)
+                    await captureScreenshotForCheck(session: session, check: check, step: "no_fields", note: "No fields after reload", autoResult: .unsure)
                     return .connectionFailure
                 }
             } else {
                 failCheck(check, message: "FATAL: Page reload also failed")
-                await captureScreenshotForCheck(session: session, check: check, step: "reload_failed", note: "Reload failed", autoResult: .fail)
+                await captureScreenshotForCheck(session: session, check: check, step: "reload_failed", note: "Reload failed", autoResult: .unsure)
                 return .connectionFailure
             }
         }
@@ -360,7 +360,7 @@ class PPSRAutomationEngine {
         }
         guard submitResult.success else {
             failCheck(check, message: "SUBMIT FAILED after 3 attempts: \(submitResult.detail)")
-            await captureScreenshotForCheck(session: session, check: check, step: "submit_failed", note: "Submit failed", autoResult: .fail)
+            await captureScreenshotForCheck(session: session, check: check, step: "submit_failed", note: "Submit failed", autoResult: .unsure)
             return .connectionFailure
         }
 
@@ -508,8 +508,8 @@ class PPSRAutomationEngine {
 
         let autoResult: PPSRDebugScreenshot.AutoDetectedResult
         switch finalEvaluation.outcome {
-        case .failInstitution: autoResult = .fail
-        case .pass: autoResult = .pass
+        case .failInstitution: autoResult = .noAcc
+        case .pass: autoResult = .success
         default: autoResult = .unknown
         }
 

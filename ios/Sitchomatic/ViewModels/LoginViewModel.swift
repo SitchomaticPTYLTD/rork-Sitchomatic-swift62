@@ -1272,28 +1272,45 @@ class LoginViewModel {
     func correctResult(for screenshot: PPSRDebugScreenshot, override: UserResultOverride) {
         screenshot.userOverride = override
 
+        let allCredScreenshots = debugScreenshots.filter { $0.cardId == screenshot.cardId }
+        for s in allCredScreenshots where s.id != screenshot.id {
+            s.userOverride = override
+        }
+
         guard let cred = credentials.first(where: { $0.id == screenshot.cardId }) else {
             log("Correction: could not find credential \(screenshot.cardDisplayNumber)", level: .warning)
             return
         }
 
-        let isPass = override == .markedPass
-        if isPass {
-            cred.status = .working
-            if let lastResult = cred.testResults.first, !lastResult.success {
-                let corrected = LoginTestResult(success: true, duration: lastResult.duration, errorMessage: nil, responseDetail: "User corrected to PASS", timestamp: lastResult.timestamp)
-                cred.testResults.insert(corrected, at: 0)
-            }
-        } else {
-            cred.status = .noAcc
-            if let lastResult = cred.testResults.first, lastResult.success {
-                let corrected = LoginTestResult(success: false, duration: lastResult.duration, errorMessage: "User corrected to FAIL", responseDetail: nil, timestamp: lastResult.timestamp)
-                cred.testResults.insert(corrected, at: 0)
-            }
+        let newStatus: CredentialStatus
+        switch override {
+        case .success: newStatus = .working
+        case .noAcc: newStatus = .noAcc
+        case .permDisabled: newStatus = .permDisabled
+        case .tempDisabled: newStatus = .tempDisabled
+        case .unsure: newStatus = .unsure
+        case .none: newStatus = cred.status
+        }
+        cred.status = newStatus
+
+        let isSuccess = override == .success
+        if let lastResult = cred.testResults.first {
+            let corrected = LoginTestResult(success: isSuccess, duration: lastResult.duration, errorMessage: isSuccess ? nil : "User corrected to \(override.displayLabel)", responseDetail: "User override: \(override.displayLabel)", timestamp: lastResult.timestamp)
+            cred.testResults.insert(corrected, at: 0)
         }
 
-        let label = isPass ? "PASS" : "FAIL"
-        log("Debug correction: \(cred.username) marked as \(label) by user", level: isPass ? .success : .error)
+        let host = "joefortunepokies.win"
+        let pageContent = screenshot.note
+        UserInterventionLearningService.shared.recordCorrection(
+            host: host,
+            pageContent: pageContent,
+            currentURL: "",
+            originalClassification: screenshot.autoDetectedResult.rawValue,
+            userCorrectedOutcome: override.rawValue,
+            actionTaken: "user_override_credential_pair"
+        )
+
+        log("Debug correction: \(cred.username) marked as \(override.displayLabel) by user (applied to \(allCredScreenshots.count) screenshots)", level: isSuccess ? .success : .warning)
         persistCredentials()
     }
 

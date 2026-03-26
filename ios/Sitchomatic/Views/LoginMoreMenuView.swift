@@ -236,14 +236,14 @@ struct LoginMoreMenuView: View {
                         }
                         Spacer()
                         if !vm.debugScreenshots.isEmpty {
-                            let passCount = vm.debugScreenshots.filter({ $0.effectiveResult == .markedPass }).count
-                            let failCount = vm.debugScreenshots.filter({ $0.effectiveResult == .markedFail }).count
+                            let successCount = vm.debugScreenshots.filter({ $0.effectiveResult == .success }).count
+                            let failedCount = vm.debugScreenshots.filter({ $0.effectiveResult != .success && $0.effectiveResult != .none }).count
                             HStack(spacing: 4) {
-                                if passCount > 0 {
-                                    Text("\(passCount)").font(.system(.caption2, design: .monospaced, weight: .bold)).foregroundStyle(.green)
+                                if successCount > 0 {
+                                    Text("\(successCount)").font(.system(.caption2, design: .monospaced, weight: .bold)).foregroundStyle(.green)
                                 }
-                                if failCount > 0 {
-                                    Text("\(failCount)").font(.system(.caption2, design: .monospaced, weight: .bold)).foregroundStyle(.red)
+                                if failedCount > 0 {
+                                    Text("\(failedCount)").font(.system(.caption2, design: .monospaced, weight: .bold)).foregroundStyle(.red)
                                 }
                             }
                         }

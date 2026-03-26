@@ -324,27 +324,11 @@ class VisionMLService {
         let fullLower = fullText.lowercased()
 
         let permDisabledPhrases = [
-            "account has been disabled", "your account has been disabled",
-            "account is disabled", "has been disabled",
-            "account has been suspended", "has been suspended",
-            "account has been blocked", "has been blocked",
-            "account has been deactivated", "has been deactivated",
-            "permanently banned", "permanently disabled",
-            "account is closed", "self-excluded",
-            "account is locked", "your account is locked",
-            "account is restricted", "blacklisted",
-            "contact customer service", "please, contact customer",
+            "has been disabled"
         ]
 
         let tempDisabledPhrases = [
-            "temporarily disabled", "temporarily suspended",
-            "temporarily blocked", "temporarily locked",
-            "too many attempts", "too many login attempts",
-            "too many failed", "try again later",
-            "try again in", "account temporarily",
-            "locked for", "wait before",
-            "exceeded login attempts", "login attempts exceeded",
-            "multiple failed attempts",
+            "temporarily disabled"
         ]
 
         let smsNotificationPhrases = [

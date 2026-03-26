@@ -178,21 +178,21 @@ struct LoginSettingsContentView: View {
                 }
 
                 if !vm.debugScreenshots.isEmpty {
-                    let passCount = vm.debugScreenshots.filter({ $0.effectiveResult == .markedPass }).count
-                    let failCount = vm.debugScreenshots.filter({ $0.effectiveResult == .markedFail }).count
-                    let unknownCount = vm.debugScreenshots.filter({ $0.effectiveResult == .none }).count
+                    let successCount = vm.debugScreenshots.filter({ $0.effectiveResult == .success }).count
+                    let noAccCount = vm.debugScreenshots.filter({ $0.effectiveResult == .noAcc || $0.effectiveResult == .permDisabled || $0.effectiveResult == .tempDisabled }).count
+                    let unknownCount = vm.debugScreenshots.filter({ $0.effectiveResult == .unsure || $0.effectiveResult == .none }).count
                     HStack(spacing: 12) {
-                        if passCount > 0 {
-                            Label("\(passCount) pass", systemImage: "checkmark.circle.fill")
+                        if successCount > 0 {
+                            Label("\(successCount) success", systemImage: "checkmark.circle.fill")
                                 .font(.caption.bold()).foregroundStyle(.green)
                         }
-                        if failCount > 0 {
-                            Label("\(failCount) fail", systemImage: "xmark.circle.fill")
+                        if noAccCount > 0 {
+                            Label("\(noAccCount) failed", systemImage: "xmark.circle.fill")
                                 .font(.caption.bold()).foregroundStyle(.red)
                         }
                         if unknownCount > 0 {
-                            Label("\(unknownCount) uncertain", systemImage: "questionmark.circle.fill")
-                                .font(.caption.bold()).foregroundStyle(.orange)
+                            Label("\(unknownCount) unsure", systemImage: "questionmark.diamond.fill")
+                                .font(.caption.bold()).foregroundStyle(.yellow)
                         }
                         Spacer()
                     }

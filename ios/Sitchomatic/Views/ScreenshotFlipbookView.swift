@@ -147,20 +147,10 @@ struct ScreenshotFlipbookView: View {
 
     @ViewBuilder
     private func resultBadge(for screenshot: PPSRDebugScreenshot) -> some View {
-        switch screenshot.effectiveResult {
-        case .markedPass:
-            Label("PASS", systemImage: "checkmark.circle.fill")
-                .font(.system(.caption2, design: .monospaced, weight: .bold))
-                .foregroundStyle(.green)
-        case .markedFail:
-            Label("FAIL", systemImage: "xmark.circle.fill")
-                .font(.system(.caption2, design: .monospaced, weight: .bold))
-                .foregroundStyle(.red)
-        case .none:
-            Label("UNSURE", systemImage: "questionmark.circle.fill")
-                .font(.system(.caption2, design: .monospaced, weight: .bold))
-                .foregroundStyle(.orange)
-        }
+        let result = screenshot.effectiveResult
+        Label(result.displayLabel.uppercased(), systemImage: result.icon)
+            .font(.system(.caption2, design: .monospaced, weight: .bold))
+            .foregroundStyle(result.color)
     }
 
     @ViewBuilder
