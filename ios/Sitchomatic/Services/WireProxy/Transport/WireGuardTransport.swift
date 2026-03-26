@@ -82,6 +82,7 @@ nonisolated struct WGSessionStats: Sendable {
 }
 
 @Observable
+@MainActor
 class WireGuardSession {
     private(set) var status: WGSessionStatus = .idle
     private(set) var sessionKeys: SessionKeys?
@@ -90,9 +91,10 @@ class WireGuardSession {
 
     private var handshakeState: HandshakeState?
     private var udpConnection: NWConnection?
-    private var keepaliveTask: Task<Void, Never>?
-    private var rekeyTask: Task<Void, Never>?
+    private var keepaliveTimer: Timer?
+    private var rekeyTimer: Timer?
     private let queue = DispatchQueue(label: "wg-session", qos: .userInitiated)
+    private let logger = DebugLogger.shared
 
     var onPacketReceived: ((Data) -> Void)?
 
@@ -115,31 +117,31 @@ class WireGuardSession {
 
         guard !trimmedPriv.isEmpty else {
             lastError = "Private key is empty"
-            DebugLogger.logBackground("WGSession: private key is empty", category: .vpn, level: .error)
+            logger.log("WGSession: private key is empty", category: .vpn, level: .error)
             return false
         }
 
         guard Data(base64Encoded: trimmedPriv) != nil else {
             lastError = "Private key is not valid base64 (length: \(trimmedPriv.count))"
-            DebugLogger.logBackground("WGSession: private key base64 decode failed (\(trimmedPriv.count) chars)", category: .vpn, level: .error)
+            logger.log("WGSession: private key base64 decode failed (\(trimmedPriv.count) chars)", category: .vpn, level: .error)
             return false
         }
 
         guard let privKey = WireGuardCrypto.privateKey(from: trimmedPriv) else {
             lastError = "Private key invalid Curve25519 key (decoded \(Data(base64Encoded: trimmedPriv)?.count ?? 0) bytes, need 32)"
-            DebugLogger.logBackground("WGSession: private key Curve25519 init failed - decoded \(Data(base64Encoded: trimmedPriv)?.count ?? 0) bytes", category: .vpn, level: .error)
+            logger.log("WGSession: private key Curve25519 init failed - decoded \(Data(base64Encoded: trimmedPriv)?.count ?? 0) bytes", category: .vpn, level: .error)
             return false
         }
 
         guard !trimmedPub.isEmpty else {
             lastError = "Peer public key is empty"
-            DebugLogger.logBackground("WGSession: peer public key is empty", category: .vpn, level: .error)
+            logger.log("WGSession: peer public key is empty", category: .vpn, level: .error)
             return false
         }
 
         guard let pubKey = WireGuardCrypto.peerPublicKey(from: trimmedPub) else {
             lastError = "Peer public key invalid (length: \(trimmedPub.count), decoded: \(Data(base64Encoded: trimmedPub)?.count ?? 0) bytes)"
-            DebugLogger.logBackground("WGSession: peer public key Curve25519 init failed", category: .vpn, level: .error)
+            logger.log("WGSession: peer public key Curve25519 init failed", category: .vpn, level: .error)
             return false
         }
 
@@ -151,7 +153,7 @@ class WireGuardSession {
             if let pskData = Data(base64Encoded: trimmedPSK), pskData.count == 32 {
                 preSharedKey = pskData
             } else {
-                DebugLogger.logBackground("WGSession: preshared key decode failed or wrong size, ignoring", category: .vpn, level: .warning)
+                logger.log("WGSession: preshared key decode failed or wrong size, ignoring", category: .vpn, level: .warning)
                 preSharedKey = nil
             }
         }
@@ -160,14 +162,14 @@ class WireGuardSession {
         let parts = trimmedEndpoint.split(separator: ":")
         guard parts.count >= 2, let port = UInt16(parts.last!) else {
             lastError = "Invalid endpoint format: \(endpoint)"
-            DebugLogger.logBackground("WGSession: invalid endpoint format '\(endpoint)'", category: .vpn, level: .error)
+            logger.log("WGSession: invalid endpoint format '\(endpoint)'", category: .vpn, level: .error)
             return false
         }
         endpointHost = parts.dropLast().joined(separator: ":")
         endpointPort = port
         persistentKeepalive = keepalive
 
-        DebugLogger.logBackground("WGSession: configured for \(endpointHost):\(endpointPort)", category: .vpn, level: .info)
+        logger.log("WGSession: configured for \(endpointHost):\(endpointPort)", category: .vpn, level: .info)
         return true
     }
 
@@ -188,7 +190,7 @@ class WireGuardSession {
         udpConnection = conn
 
         conn.stateUpdateHandler = { [weak self] state in
-            self?.queue.async { [weak self] in
+            Task { @MainActor [weak self] in
                 guard let self else { return }
                 switch state {
                 case .ready:
@@ -196,7 +198,7 @@ class WireGuardSession {
                 case .failed(let error):
                     self.status = .failed
                     self.lastError = "UDP connection failed: \(error.localizedDescription)"
-                    DebugLogger.logBackground("WGSession: UDP failed - \(error)", category: .vpn, level: .error)
+                    self.logger.log("WGSession: UDP failed - \(error)", category: .vpn, level: .error)
                 default:
                     break
                 }
@@ -206,16 +208,16 @@ class WireGuardSession {
     }
 
     func disconnect() {
-        keepaliveTask?.cancel()
-        keepaliveTask = nil
-        rekeyTask?.cancel()
-        rekeyTask = nil
+        keepaliveTimer?.invalidate()
+        keepaliveTimer = nil
+        rekeyTimer?.invalidate()
+        rekeyTimer = nil
         udpConnection?.cancel()
         udpConnection = nil
         sessionKeys = nil
         handshakeState = nil
         status = .idle
-        DebugLogger.logBackground("WGSession: disconnected", category: .vpn, level: .info)
+        logger.log("WGSession: disconnected", category: .vpn, level: .info)
     }
 
     func sendPacket(_ ipPacket: Data) {
@@ -231,7 +233,7 @@ class WireGuardSession {
             plaintext: ipPacket,
             aad: Data()
         ) else {
-            DebugLogger.logBackground("WGSession: encrypt failed", category: .vpn, level: .error)
+            logger.log("WGSession: encrypt failed", category: .vpn, level: .error)
             return
         }
 
@@ -242,10 +244,10 @@ class WireGuardSession {
         )
 
         udpConnection?.send(content: packet.serialize(), completion: .contentProcessed { [weak self] error in
-            self?.queue.async { [weak self] in
+            Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let error {
-                    DebugLogger.logBackground("WGSession: send failed - \(error)", category: .vpn, level: .error)
+                    self.logger.log("WGSession: send failed - \(error)", category: .vpn, level: .error)
                 } else {
                     self.stats.packetsSent += 1
                     self.stats.bytesSent += UInt64(ipPacket.count)
@@ -263,7 +265,7 @@ class WireGuardSession {
         ) else {
             status = .failed
             lastError = "Failed to build handshake initiation"
-            DebugLogger.logBackground("WGSession: handshake build failed", category: .vpn, level: .error)
+            logger.log("WGSession: handshake build failed", category: .vpn, level: .error)
             return
         }
 
@@ -271,14 +273,14 @@ class WireGuardSession {
         let initiationData = NoiseHandshake.serializeInitiation(result.initiation)
 
         udpConnection?.send(content: initiationData, completion: .contentProcessed { [weak self] error in
-            self?.queue.async { [weak self] in
+            Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let error {
                     self.status = .failed
                     self.lastError = "Handshake send failed: \(error.localizedDescription)"
                     return
                 }
-                DebugLogger.logBackground("WGSession: handshake initiation sent (\(initiationData.count) bytes)", category: .vpn, level: .info)
+                self.logger.log("WGSession: handshake initiation sent (\(initiationData.count) bytes)", category: .vpn, level: .info)
                 self.receiveHandshakeResponse()
             }
         })
@@ -286,7 +288,7 @@ class WireGuardSession {
 
     private func receiveHandshakeResponse() {
         udpConnection?.receive(minimumIncompleteLength: 1, maximumLength: 256) { [weak self] data, _, _, error in
-            self?.queue.async { [weak self] in
+            Task { @MainActor [weak self] in
                 guard let self else { return }
 
                 if let error {
@@ -308,7 +310,7 @@ class WireGuardSession {
                 }
 
                 if data.count >= 1 && data[0] == WGMessageType.cookieReply.rawValue {
-                    DebugLogger.logBackground("WGSession: received cookie reply, retry needed", category: .vpn, level: .warning)
+                    self.logger.log("WGSession: received cookie reply, retry needed", category: .vpn, level: .warning)
                     self.status = .failed
                     self.lastError = "Server sent cookie reply (rate limited)"
                     return
@@ -317,7 +319,7 @@ class WireGuardSession {
                 guard let keys = NoiseHandshake.parseResponse(responseData: data, state: state) else {
                     self.status = .failed
                     self.lastError = "Failed to parse handshake response"
-                    DebugLogger.logBackground("WGSession: handshake response parse failed (\(data.count) bytes, type: \(data[0]))", category: .vpn, level: .error)
+                    self.logger.log("WGSession: handshake response parse failed (\(data.count) bytes, type: \(data[0]))", category: .vpn, level: .error)
                     return
                 }
 
@@ -326,7 +328,7 @@ class WireGuardSession {
                 self.status = .established
                 self.stats.handshakeCount += 1
                 self.stats.lastHandshakeTime = Date()
-                DebugLogger.logBackground("WGSession: ESTABLISHED (sender: \(keys.senderIndex), receiver: \(keys.receiverIndex))", category: .vpn, level: .success)
+                self.logger.log("WGSession: ESTABLISHED (sender: \(keys.senderIndex), receiver: \(keys.receiverIndex))", category: .vpn, level: .success)
 
                 self.startKeepalive()
                 self.startRekeyTimer()
@@ -341,7 +343,7 @@ class WireGuardSession {
         guard status == .established else { return }
 
         udpConnection?.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, _, error in
-            self?.queue.async { [weak self] in
+            Task { @MainActor [weak self] in
                 guard let self, self.status == .established else { return }
 
                 if let data, !data.isEmpty {
@@ -367,7 +369,7 @@ class WireGuardSession {
             ciphertext: packet.encryptedPayload,
             aad: Data()
         ) else {
-            DebugLogger.logBackground("WGSession: decrypt failed (counter: \(packet.counter))", category: .vpn, level: .warning)
+            logger.log("WGSession: decrypt failed (counter: \(packet.counter))", category: .vpn, level: .warning)
             return
         }
 
@@ -391,29 +393,22 @@ class WireGuardSession {
     }
 
     private func startKeepalive() {
-        keepaliveTask?.cancel()
+        keepaliveTimer?.invalidate()
         guard persistentKeepalive > 0 else { return }
-        let interval = persistentKeepalive
 
-        keepaliveTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(interval))
-                guard !Task.isCancelled else { break }
-                self?.queue.async { [weak self] in
-                    self?.sendKeepalive()
-                }
+        keepaliveTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(persistentKeepalive), repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.sendKeepalive()
             }
         }
     }
 
     private func startRekeyTimer() {
-        rekeyTask?.cancel()
-        rekeyTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(120))
-            guard !Task.isCancelled else { return }
-            self?.queue.async { [weak self] in
+        rekeyTimer?.invalidate()
+        rekeyTimer = Timer.scheduledTimer(withTimeInterval: 120, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
                 guard let self, self.status == .established else { return }
-                DebugLogger.logBackground("WGSession: rekey timer fired, initiating new handshake", category: .vpn, level: .info)
+                self.logger.log("WGSession: rekey timer fired, initiating new handshake", category: .vpn, level: .info)
                 self.status = .rekeying
                 if let privKey = self.staticPrivateKey, let pubKey = self.peerPublicKey {
                     self.performHandshake(staticPrivateKey: privKey, peerPublicKey: pubKey)

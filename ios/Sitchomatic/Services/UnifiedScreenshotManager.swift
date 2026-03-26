@@ -4,6 +4,7 @@ import UIKit
 import SwiftUI
 
 @Observable
+@MainActor
 class UnifiedScreenshotManager {
     static let shared = UnifiedScreenshotManager()
 
@@ -12,6 +13,7 @@ class UnifiedScreenshotManager {
     private let maxScreenshots: Int = 300
     private let visionCrop = VisionTextCropService.shared
     private let dedup = ScreenshotDedupService.shared
+    private let logger = DebugLogger.shared
 
     struct AnalysisStats {
         var totalCaptured: Int = 0
@@ -35,7 +37,7 @@ class UnifiedScreenshotManager {
 
         if dedup.isDuplicate(image) {
             analysisStats.duplicatesSkipped += 1
-            DebugLogger.logBackground("UnifiedScreenshots: duplicate skipped for \(credentialEmail) step=\(step.rawValue)", category: .screenshot, level: .trace)
+            logger.log("UnifiedScreenshots: duplicate skipped for \(credentialEmail) step=\(step.rawValue)", category: .screenshot, level: .trace)
             return
         }
 
@@ -85,7 +87,7 @@ class UnifiedScreenshotManager {
         }
 
         let crucialInfo = analysis?.crucialMatches.isEmpty == false ? " CRUCIAL:\(analysis!.crucialMatches.joined(separator: ","))" : ""
-        DebugLogger.logBackground("UnifiedScreenshots: captured \(step.rawValue) for \(credentialEmail) site=\(site) attempt=\(attemptNumber)\(crucialInfo)", category: .screenshot, level: crucialInfo.isEmpty ? .debug : .info)
+        logger.log("UnifiedScreenshots: captured \(step.rawValue) for \(credentialEmail) site=\(site) attempt=\(attemptNumber)\(crucialInfo)", category: .screenshot, level: crucialInfo.isEmpty ? .debug : .info)
     }
 
     func screenshotsForSession(_ sessionId: String) -> [UnifiedScreenshot] {
@@ -109,7 +111,7 @@ class UnifiedScreenshotManager {
         screenshots.removeAll()
         dedup.resetAll()
         analysisStats = AnalysisStats()
-        DebugLogger.logBackground("UnifiedScreenshots: cleared \(count) screenshots", category: .screenshot, level: .info)
+        logger.log("UnifiedScreenshots: cleared \(count) screenshots", category: .screenshot, level: .info)
     }
 
     func clearForSession(_ sessionId: String) {
