@@ -740,8 +740,8 @@ class LoginAutomationEngine {
                     attempt.logs.append(PPSRLogEntry(message: "Cycle \(cycle): button READY in \(buttonReadyResult.durationMs)ms — \(buttonReadyResult.reason)", level: .success))
                 } else {
                     attempt.logs.append(PPSRLogEntry(message: "Cycle \(cycle): button readiness TIMEOUT after \(buttonReadyResult.durationMs)ms — \(buttonReadyResult.reason)", level: .warning))
-                    let fallbackCheck = await session.checkLoginButtonReadiness()
-                    if !fallbackCheck.isReady {
+                    let fallbackReady = await session.checkLoginButtonReadiness()
+                    if !fallbackReady {
                         attempt.logs.append(PPSRLogEntry(message: "Cycle \(cycle): login button hung after dynamic readiness check — requeuing", level: .warning))
                         attempt.status = .failed
                         attempt.errorMessage = "Login button hung in loading state — requeued"

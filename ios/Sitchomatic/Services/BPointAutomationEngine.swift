@@ -252,10 +252,10 @@ class BPointAutomationEngine {
             guard !isTimedOut(deadline) else { return .timeout }
             await speedDelay(seconds: 2)
 
-            let emailCheck = await session.detectEmailFieldOnPaymentPage()
-            if emailCheck.hasEmail {
-                check.logs.append(PPSRLogEntry(message: "Email field detected on payment page: \(emailCheck.detail) — blacklisting \(billerCode)", level: .warning))
-                blacklistBiller(billerCode, reason: "Email field required: \(emailCheck.detail)")
+            let hasEmailField = await session.detectEmailFieldOnPaymentPage()
+            if hasEmailField {
+                check.logs.append(PPSRLogEntry(message: "Email field detected on payment page — blacklisting \(billerCode)", level: .warning))
+                blacklistBiller(billerCode, reason: "Email field required")
                 continue
             }
 

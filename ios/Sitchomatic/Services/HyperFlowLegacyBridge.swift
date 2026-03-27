@@ -488,6 +488,63 @@ class LoginSiteWebSession: NSObject {
         _ = await executeJS(js)
     }
 
+    func fillForgotPasswordEmail(_ email: String) async -> (success: Bool, detail: String) {
+        let escaped = email.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        let js = """
+        (function() {
+            var selectors = ['input[type="email"]', 'input[name*="email" i]', 'input[id*="email" i]', 'input[placeholder*="email" i]', 'input[type="text"]'];
+            for (var i = 0; i < selectors.length; i++) {
+                var el = document.querySelector(selectors[i]);
+                if (el) {
+                    el.focus();
+                    var ns = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+                    if (ns && ns.set) { ns.set.call(el, '\(escaped)'); } else { el.value = '\(escaped)'; }
+                    el.dispatchEvent(new Event('input', {bubbles: true}));
+                    el.dispatchEvent(new Event('change', {bubbles: true}));
+                    el.dispatchEvent(new Event('blur', {bubbles: true}));
+                    return 'OK';
+                }
+            }
+            return 'NO_FIELD';
+        })()
+        """
+        let result = await executeJS(js)
+        if result == "OK" {
+            return (success: true, detail: "Email filled")
+        }
+        return (success: false, detail: result ?? "No email field found")
+    }
+
+    func clickForgotPasswordSubmit() async -> (success: Bool, detail: String) {
+        let js = """
+        (function() {
+            var selectors = ['button[type="submit"]', 'input[type="submit"]', 'button.submit', '#submit'];
+            var terms = ['submit', 'send', 'reset', 'continue', 'next'];
+            for (var i = 0; i < selectors.length; i++) {
+                var el = document.querySelector(selectors[i]);
+                if (el) { el.click(); return 'CLICKED:' + (el.tagName || 'unknown'); }
+            }
+            var allBtns = document.querySelectorAll('button, [role="button"], a.button');
+            for (var j = 0; j < allBtns.length; j++) {
+                var txt = (allBtns[j].textContent || '').toLowerCase().trim();
+                for (var t = 0; t < terms.length; t++) {
+                    if (txt.indexOf(terms[t]) !== -1) {
+                        allBtns[j].click();
+                        return 'CLICKED:' + txt;
+                    }
+                }
+            }
+            return 'NO_BUTTON';
+        })()
+        """
+        let result = await executeJS(js)
+        if let result, result.hasPrefix("CLICKED:") {
+            return (success: true, detail: result)
+        }
+        return (success: false, detail: result ?? "No submit button found")
+    }
+
     func verifyLoginFieldsExist() async -> (found: Int, missing: [String]) {
         let js = """
         (function() {
@@ -891,8 +948,8 @@ class LoginSiteWebSession: NSObject {
         let start = Date()
         let timeoutSec = Double(maxTimeoutMs) / 1000.0
         while Date().timeIntervalSince(start) < timeoutSec {
-            let readiness = await checkLoginButtonReadiness()
-            if readiness.isReady {
+            let isReady = await checkLoginButtonReadiness()
+            if isReady {
                 let ms = Int(Date().timeIntervalSince(start) * 1000)
                 return (ready: true, durationMs: ms, reason: "Button clickable (no fingerprint)", recoveredFromFingerprint: false)
             }
@@ -902,7 +959,7 @@ class LoginSiteWebSession: NSObject {
         return (ready: false, durationMs: ms, reason: "Timeout waiting for button readiness", recoveredFromFingerprint: false)
     }
 
-    func checkLoginButtonReadiness() async -> (isReady: Bool) {
+    func checkLoginButtonReadiness() async -> Bool {
         let js = """
         (function() {
             var selectors = ['button[type="submit"]','input[type="submit"]','#login-submit','#loginButton','button.login-button'];
@@ -931,7 +988,7 @@ class LoginSiteWebSession: NSObject {
         })();
         """
         let result = await executeJS(js)
-        return (isReady: result == "READY")
+        return result == "READY"
     }
 
     // MARK: Utilities
@@ -1714,6 +1771,14 @@ class LoginWebSession: NSObject {
         }
         return isPageLoaded
     }
+
+    func getPageTitle() async -> String {
+        webView?.title ?? ""
+    }
+
+    func getCurrentURL() async -> String {
+        webView?.url?.absoluteString ?? ""
+    }
 }
 
 // MARK: - LoginWebSession + WKNavigationDelegate
@@ -2426,6 +2491,19 @@ class BPointWebSession: NSObject {
             if currentContent != initialContent { return true }
         }
         return false
+    }
+
+    func getCurrentURL() async -> String {
+        webView?.url?.absoluteString ?? ""
+    }
+
+    func waitForNavigation(timeout: TimeInterval = 30) async -> Bool {
+        let start = Date()
+        while Date().timeIntervalSince(start) < timeout {
+            if isPageLoaded { return true }
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+        return isPageLoaded
     }
 }
 

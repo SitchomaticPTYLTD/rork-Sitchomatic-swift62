@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import WebKit
 
-nonisolated enum CheckOutcome: Sendable {
+nonisolated enum CheckOutcome: Sendable, Equatable {
     case pass
     case failInstitution
     case uncertain
@@ -242,7 +242,7 @@ class PPSRAutomationEngine {
 
         if !appReady.ready && appReady.fieldsFound == 0 {
             check.logs.append(PPSRLogEntry(message: "Healing: dumping page structure for diagnostics...", level: .info))
-            let structure = await session.dumpPageStructure()
+            let structure = await session.dumpPageStructure() ?? ""
             logger.log("Page structure dump: \(structure.prefix(500))", category: .automation, level: .debug, sessionId: sessionId)
             check.logs.append(PPSRLogEntry(message: "Page structure: \(structure.prefix(300))", level: .warning))
 
@@ -290,13 +290,13 @@ class PPSRAutomationEngine {
         }
 
         logger.startTimer(key: "\(sessionId)_fieldverify")
-        let verification = await session.verifyFieldsExist()
+        let fieldsExist = await session.verifyFieldsExist()
         let fieldMs = logger.stopTimer(key: "\(sessionId)_fieldverify")
-        logger.log("Final field verification: \(verification.found)/6 found", category: .automation, level: verification.found >= 4 ? .debug : .warning, sessionId: sessionId, durationMs: fieldMs)
-        if verification.found < 6 {
-            check.logs.append(PPSRLogEntry(message: "Field scan: \(verification.found)/6 found. Missing: [\(verification.missing.joined(separator: ", "))]", level: verification.found >= 4 ? .info : .warning))
+        logger.log("Final field verification: VIN field \(fieldsExist ? "found" : "not found")", category: .automation, level: fieldsExist ? .debug : .warning, sessionId: sessionId, durationMs: fieldMs)
+        if !fieldsExist {
+            check.logs.append(PPSRLogEntry(message: "Field scan: VIN field not found", level: .warning))
         } else {
-            check.logs.append(PPSRLogEntry(message: "All 6 form fields verified present and enabled", level: .success))
+            check.logs.append(PPSRLogEntry(message: "Form fields verified present and enabled", level: .success))
         }
 
         logger.log("Phase: FILL FORM FIELDS", category: .automation, level: .info, sessionId: sessionId)
