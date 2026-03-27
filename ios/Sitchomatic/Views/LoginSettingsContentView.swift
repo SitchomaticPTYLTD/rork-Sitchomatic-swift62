@@ -122,7 +122,7 @@ struct LoginSettingsContentView: View {
     private var concurrencySection: some View {
         Section {
             Picker("Max Sessions", selection: $vm.maxConcurrency) {
-                ForEach(1...8, id: \.self) { n in Text("\(n)").tag(n) }
+                ForEach(1...7, id: \.self) { n in Text("\(n)").tag(n) }
             }
             .pickerStyle(.menu)
             .disabled(vm.isSlowDebugModeEnabled)

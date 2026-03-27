@@ -147,23 +147,17 @@ nonisolated struct DualFindInterventionRequest: Identifiable, Sendable {
 }
 
 nonisolated enum DualFindSessionCount: Int, CaseIterable, Sendable {
+    case one = 1
+    case two = 2
+    case three = 3
     case four = 4
+    case five = 5
     case six = 6
-    case eight = 8
+    case seven = 7
 
     var label: String {
-        switch self {
-        case .four: "4 Sessions (2+2)"
-        case .six: "6 Sessions (3+3)"
-        case .eight: "8 Sessions (4+4)"
-        }
+        "\(rawValue * 2) Sessions (\(rawValue)+\(rawValue))"
     }
 
-    var perSite: Int {
-        switch self {
-        case .four: 2
-        case .six: 3
-        case .eight: 4
-        }
-    }
+    var perSite: Int { rawValue }
 }

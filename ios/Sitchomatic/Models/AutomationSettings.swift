@@ -113,7 +113,7 @@ nonisolated struct AutomationSettings: Codable, Sendable {
     var maxScreenshotRetention: Int = 500
 
     // MARK: - Concurrency
-    var maxConcurrency: Int = 4
+    var maxConcurrency: Int = 7
     var batchDelayBetweenStartsMs: Int = 0
     var connectionTestBeforeBatch: Bool = true
 
