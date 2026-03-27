@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import WebKit
 
-nonisolated enum CheckOutcome: Sendable {
+nonisolated enum CheckOutcome: Sendable, Equatable {
     case pass
     case failInstitution
     case uncertain
@@ -187,7 +187,7 @@ class PPSRAutomationEngine {
             return .connectionFailure
         }
 
-        let pageTitle = await session.getPageTitle()
+        let pageTitle = session.webView?.title ?? "(unknown)"
         check.logs.append(PPSRLogEntry(message: "Page loaded: \"\(pageTitle)\"", level: .info))
         logger.log("Page title: \"\(pageTitle)\"", category: .webView, level: .debug, sessionId: sessionId)
 
@@ -242,7 +242,7 @@ class PPSRAutomationEngine {
 
         if !appReady.ready && appReady.fieldsFound == 0 {
             check.logs.append(PPSRLogEntry(message: "Healing: dumping page structure for diagnostics...", level: .info))
-            let structure = await session.dumpPageStructure()
+            let structure = await session.dumpPageStructure() ?? "(empty)"
             logger.log("Page structure dump: \(structure.prefix(500))", category: .automation, level: .debug, sessionId: sessionId)
             check.logs.append(PPSRLogEntry(message: "Page structure: \(structure.prefix(300))", level: .warning))
 
@@ -290,13 +290,13 @@ class PPSRAutomationEngine {
         }
 
         logger.startTimer(key: "\(sessionId)_fieldverify")
-        let verification = await session.verifyFieldsExist()
+        let fieldsVerified = await session.verifyFieldsExist()
         let fieldMs = logger.stopTimer(key: "\(sessionId)_fieldverify")
-        logger.log("Final field verification: \(verification.found)/6 found", category: .automation, level: verification.found >= 4 ? .debug : .warning, sessionId: sessionId, durationMs: fieldMs)
-        if verification.found < 6 {
-            check.logs.append(PPSRLogEntry(message: "Field scan: \(verification.found)/6 found. Missing: [\(verification.missing.joined(separator: ", "))]", level: verification.found >= 4 ? .info : .warning))
+        logger.log("Final field verification: \(fieldsVerified ? "found" : "missing")", category: .automation, level: fieldsVerified ? .debug : .warning, sessionId: sessionId, durationMs: fieldMs)
+        if !fieldsVerified {
+            check.logs.append(PPSRLogEntry(message: "Field scan: VIN field not found", level: .warning))
         } else {
-            check.logs.append(PPSRLogEntry(message: "All 6 form fields verified present and enabled", level: .success))
+            check.logs.append(PPSRLogEntry(message: "Form fields verified present", level: .success))
         }
 
         logger.log("Phase: FILL FORM FIELDS", category: .automation, level: .info, sessionId: sessionId)
@@ -362,7 +362,7 @@ class PPSRAutomationEngine {
             return .connectionFailure
         }
 
-        let preSubmitURL = await session.getCurrentURL()
+        let preSubmitURL = session.webView?.url?.absoluteString ?? ""
         check.logs.append(PPSRLogEntry(message: "Pre-submit URL: \(preSubmitURL)", level: .info))
 
         let navigated = await session.waitForNavigation(timeout: TimeoutResolver.resolveAutomationTimeout(10))
@@ -371,7 +371,7 @@ class PPSRAutomationEngine {
         }
         await speedDelay(seconds: 1)
 
-        let postSubmitURL = await session.getCurrentURL()
+        let postSubmitURL = session.webView?.url?.absoluteString ?? ""
         let urlChanged = postSubmitURL != preSubmitURL
         if urlChanged {
             check.logs.append(PPSRLogEntry(message: "REDIRECT DETECTED: \(preSubmitURL) → \(postSubmitURL)", level: .info))
@@ -422,7 +422,7 @@ class PPSRAutomationEngine {
 
         var pageContent = await session.getPageContent() ?? ""
         var contentLower = pageContent.lowercased()
-        var currentURL = await session.getCurrentURL()
+        var currentURL = session.webView?.url?.absoluteString ?? ""
 
         let ppsr_host = LoginWebSession.targetURL.host ?? "transact.ppsr.gov.au"
         let postSubmitSnapshot = SessionHealthSnapshot(
@@ -440,7 +440,7 @@ class PPSRAutomationEngine {
             check.logs.append(PPSRLogEntry(message: "Initial eval uncertain — polling for redirect/content change (up to 10s)...", level: .warning))
             for pollIdx in 1...5 {
                 await speedDelay(seconds: 2)
-                let pollURL = await session.getCurrentURL()
+                let pollURL = session.webView?.url?.absoluteString ?? ""
                 let pollContent = await session.getPageContent() ?? ""
                 let pollLower = pollContent.lowercased()
                 let pollURLChanged = pollURL != preSubmitURL
@@ -469,7 +469,7 @@ class PPSRAutomationEngine {
                 await speedDelay(seconds: 2)
                 pageContent = await session.getPageContent() ?? ""
                 contentLower = pageContent.lowercased()
-                currentURL = await session.getCurrentURL()
+                currentURL = session.webView?.url?.absoluteString ?? ""
                 let retryURLChanged = currentURL != preSubmitURL
                 evaluation = evaluatePPSRResponse(contentLower: contentLower, pageContent: pageContent, currentURL: currentURL, urlChanged: retryURLChanged)
             }
