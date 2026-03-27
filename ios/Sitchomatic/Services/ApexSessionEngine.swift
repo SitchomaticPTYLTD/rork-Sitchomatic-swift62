@@ -1,13 +1,13 @@
-// HyperFlowLegacyBridge.swift
-// Sitchomatic
+// ApexSessionEngine.swift
+// Sitchomatic — Apex Edition
 //
-// Compatibility bridge: provides the old class interfaces (LoginSiteWebSession,
-// LoginWebSession, BPointWebSession, WebViewTracker, DeadSessionDetector,
-// SessionActivityMonitor) backed by the new HyperFlow engine architecture.
+// Actor-isolated session engine for A19 Pro Max / iOS 26.
+// Provides LoginSiteWebSession, LoginWebSession, BPointWebSession,
+// WebViewTracker, DeadSessionDetector, SessionActivityMonitor.
 //
-// Each session now uses an ISOLATED WKProcessPool and nonPersistent
-// WKWebsiteDataStore per instance, with WeakTrampolineProxy for message
-// handlers — matching the AutomationPairSession isolation model.
+// Each session uses an ISOLATED WKProcessPool + nonPersistent
+// WKWebsiteDataStore per instance with native async WebKit evaluation
+// and WKScriptMessageHandlerWithReply for zero-bridge JS communication.
 
 import Foundation
 import WebKit
@@ -16,15 +16,15 @@ import Vision
 
 // NOTE: LoginTargetSite enum is defined in HyperFlowPairedTasks.swift
 
-/// Shared constants for the legacy bridge layer.
-private enum BridgeConstants {
+/// Shared constants for the Apex session engine.
+private enum ApexConstants {
     static let maxPageContentLength = 3000
     static let heartbeatTimeoutSeconds: TimeInterval = 15
 }
 
-// MARK: - 1. LoginSiteWebSession (HyperFlow-Backed)
+// MARK: - 1. LoginSiteWebSession (Apex Actor-Isolated)
 
-/// Drop-in replacement for the legacy LoginSiteWebSession.
+/// Apex-isolated WebKit session for A19 Pro Max.
 /// Creates an isolated WKProcessPool + nonPersistent WKWebsiteDataStore per
 /// instance so that concurrent sessions never share cookies or storage.
 @MainActor
@@ -56,9 +56,9 @@ class LoginSiteWebSession: NSObject {
         sessionId.uuidString.prefix(8).lowercased() + "-" + (targetURL.host ?? "unknown")
     }
 
-    /// Per-instance isolated process pool (HyperFlow architecture).
+    /// Per-instance isolated process pool (Apex architecture).
     private let isolatedProcessPool = WKProcessPool()
-    /// Per-instance isolated data store (HyperFlow architecture).
+    /// Per-instance isolated data store (Apex architecture).
     private let isolatedDataStore = WKWebsiteDataStore.nonPersistent()
 
     private var pageLoadContinuation: CheckedContinuation<Bool, Never>?
@@ -107,8 +107,8 @@ class LoginSiteWebSession: NSObject {
         config.defaultWebpagePreferences.allowsContentJavaScript = true
 
         let contentController = WKUserContentController()
-        let proxy = WeakTrampolineProxy(target: self)
-        contentController.add(proxy, name: "hyperflowBridge")
+        let proxy = ApexMessageProxy(target: self)
+        contentController.add(proxy, name: "apexBridge")
         config.userContentController = contentController
 
         let proxyApplied = NetworkSessionFactory.shared.configureWKWebView(
@@ -117,7 +117,7 @@ class LoginSiteWebSession: NSObject {
         isProtectedRouteBlocked = networkConfig.requiresProtectedRoute && !proxyApplied
         if isProtectedRouteBlocked {
             lastNavigationError = "Protected route blocked — no proxy path available for \(proxyTarget.rawValue)"
-            logger.log("LoginSiteWebSession[HF]: BLOCKED — no proxy available for \(proxyTarget.rawValue)",
+            logger.log("ApexSession: BLOCKED — no proxy available for \(proxyTarget.rawValue)",
                        category: .network, level: .error)
         }
 
@@ -143,17 +143,17 @@ class LoginSiteWebSession: NSObject {
             let wv = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844),
                                configuration: config)
             wv.navigationDelegate = self
-            wv.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+            wv.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
             self.webView = wv
         }
 
-        // Register with both the legacy tracker and the HyperFlow pool.
+        // Register with both the Apex session tracker and pool.
         WebViewTracker.shared.incrementActive(sessionId: trackerSessionId)
         if let wv = webView {
             WebViewPool.shared.mount(wv, for: sessionId)
         }
 
-        logger.log("LoginSiteWebSession[HF]: setUp (network=\(networkConfig.label), target=\(proxyTarget.rawValue), isolated=true)",
+        logger.log("ApexSession: setUp (network=\(networkConfig.label), target=\(proxyTarget.rawValue), isolated=true)",
                    category: .webView, level: .debug)
     }
 
@@ -168,7 +168,7 @@ class LoginSiteWebSession: NSObject {
                     ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
                     modifiedSince: .distantPast) { }
                 wv.configuration.userContentController.removeAllUserScripts()
-                wv.configuration.userContentController.removeScriptMessageHandler(forName: "hyperflowBridge")
+                wv.configuration.userContentController.removeScriptMessageHandler(forName: "apexBridge")
             }
             wv.navigationDelegate = nil
         }
@@ -268,7 +268,7 @@ class LoginSiteWebSession: NSObject {
     // MARK: Page Content & Screenshots
 
     func getPageContent() async -> String? {
-        await executeJS("document.body ? document.body.innerText.substring(0, \(BridgeConstants.maxPageContentLength)) : ''")
+        await executeJS("document.body ? document.body.innerText.substring(0, \(ApexConstants.maxPageContentLength)) : ''")
     }
 
     func captureScreenshot() async -> UIImage? {
@@ -1465,7 +1465,7 @@ extension LoginSiteWebSession: WKNavigationDelegate {
     }
 }
 
-// MARK: - LoginSiteWebSession + WKScriptMessageHandler
+// MARK: - LoginSiteWebSession + WKScriptMessageHandler (Apex)
 
 extension LoginSiteWebSession: WKScriptMessageHandler {
     nonisolated func userContentController(_ userContentController: WKUserContentController,
@@ -1474,7 +1474,7 @@ extension LoginSiteWebSession: WKScriptMessageHandler {
     }
 }
 
-// MARK: - 2. LoginWebSession (HyperFlow-Backed)
+// MARK: - 2. LoginWebSession (Apex Actor-Isolated)
 
 /// Drop-in replacement for the legacy LoginWebSession used by PPSRAutomationEngine.
 /// Isolated WKProcessPool + nonPersistent WKWebsiteDataStore per instance.
@@ -1539,8 +1539,8 @@ class LoginWebSession: NSObject {
         config.defaultWebpagePreferences.allowsContentJavaScript = true
 
         let contentController = WKUserContentController()
-        let trampolineProxy = WeakTrampolineProxy(target: self)
-        contentController.add(trampolineProxy, name: "hyperflowBridge")
+        let trampolineProxy = ApexMessageProxy(target: self)
+        contentController.add(trampolineProxy, name: "apexBridge")
 
         if let blockScript = blockImagesScript {
             contentController.addUserScript(blockScript)
@@ -1579,7 +1579,7 @@ class LoginWebSession: NSObject {
             let wv = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844),
                                configuration: config)
             wv.navigationDelegate = self
-            wv.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+            wv.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
             self.webView = wv
         }
 
@@ -1597,7 +1597,7 @@ class LoginWebSession: NSObject {
                 ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
                 modifiedSince: .distantPast) { }
             wv.configuration.userContentController.removeAllUserScripts()
-            wv.configuration.userContentController.removeScriptMessageHandler(forName: "hyperflowBridge")
+            wv.configuration.userContentController.removeScriptMessageHandler(forName: "apexBridge")
             wv.navigationDelegate = nil
         }
         if webView != nil {
@@ -1709,7 +1709,7 @@ class LoginWebSession: NSObject {
     // MARK: Page Content & Screenshots
 
     func getPageContent() async -> String? {
-        await executeJS("document.body ? document.body.innerText.substring(0, \(BridgeConstants.maxPageContentLength)) : ''")
+        await executeJS("document.body ? document.body.innerText.substring(0, \(ApexConstants.maxPageContentLength)) : ''")
     }
 
     func captureScreenshot() async -> UIImage? {
@@ -2215,7 +2215,7 @@ extension LoginWebSession: WKNavigationDelegate {
     }
 }
 
-// MARK: - LoginWebSession + WKScriptMessageHandler
+// MARK: - LoginWebSession + WKScriptMessageHandler (Apex)
 
 extension LoginWebSession: WKScriptMessageHandler {
     nonisolated func userContentController(_ userContentController: WKUserContentController,
@@ -2224,7 +2224,7 @@ extension LoginWebSession: WKScriptMessageHandler {
     }
 }
 
-// MARK: - 3. BPointWebSession (HyperFlow-Backed)
+// MARK: - 3. BPointWebSession (Apex Actor-Isolated)
 
 /// Drop-in replacement for the legacy BPointWebSession used by BPointAutomationEngine.
 /// Isolated WKProcessPool + nonPersistent WKWebsiteDataStore per instance.
@@ -2287,8 +2287,8 @@ class BPointWebSession: NSObject {
         config.defaultWebpagePreferences.allowsContentJavaScript = true
 
         let contentController = WKUserContentController()
-        let trampolineProxy = WeakTrampolineProxy(target: self)
-        contentController.add(trampolineProxy, name: "hyperflowBridge")
+        let trampolineProxy = ApexMessageProxy(target: self)
+        contentController.add(trampolineProxy, name: "apexBridge")
 
         if blockImages {
             let blockScript = WKUserScript(source: """
@@ -2330,7 +2330,7 @@ class BPointWebSession: NSObject {
             let wv = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844),
                                configuration: config)
             wv.navigationDelegate = self
-            wv.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+            wv.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
             self.webView = wv
         }
 
@@ -2348,7 +2348,7 @@ class BPointWebSession: NSObject {
                 ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
                 modifiedSince: .distantPast) { }
             wv.configuration.userContentController.removeAllUserScripts()
-            wv.configuration.userContentController.removeScriptMessageHandler(forName: "hyperflowBridge")
+            wv.configuration.userContentController.removeScriptMessageHandler(forName: "apexBridge")
             wv.navigationDelegate = nil
         }
         if webView != nil {
@@ -2491,7 +2491,7 @@ class BPointWebSession: NSObject {
     // MARK: Page Content & Screenshots
 
     func getPageContent() async -> String? {
-        await executeJS("document.body ? document.body.innerText.substring(0, \(BridgeConstants.maxPageContentLength)) : ''")
+        await executeJS("document.body ? document.body.innerText.substring(0, \(ApexConstants.maxPageContentLength)) : ''")
     }
 
     func captureScreenshot() async -> UIImage? {
@@ -2945,7 +2945,7 @@ extension BPointWebSession: WKNavigationDelegate {
     }
 }
 
-// MARK: - BPointWebSession + WKScriptMessageHandler
+// MARK: - BPointWebSession + WKScriptMessageHandler (Apex)
 
 extension BPointWebSession: WKScriptMessageHandler {
     nonisolated func userContentController(_ userContentController: WKUserContentController,
@@ -3038,7 +3038,7 @@ class DeadSessionDetector {
 
     private let logger = DebugLogger.shared
     private let activityMonitor = SessionActivityMonitor.shared
-    private let heartbeatTimeoutSeconds: TimeInterval = BridgeConstants.heartbeatTimeoutSeconds
+    private let heartbeatTimeoutSeconds: TimeInterval = ApexConstants.heartbeatTimeoutSeconds
     private var activeWatchdogs: [String: Task<Void, Never>] = [:]
     private var sessionStartTimes: [String: Date] = [:]
 
