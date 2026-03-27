@@ -1408,8 +1408,9 @@ class LoginViewModel {
         let batch = pendingLogs
         pendingLogs.removeAll()
         globalLogs.insert(contentsOf: batch.reversed(), at: 0)
-        if globalLogs.count > 1500 {
-            globalLogs.removeLast(globalLogs.count - 1500)
+        let cap = isRunning ? 800 : 1500
+        if globalLogs.count > cap {
+            globalLogs.removeLast(globalLogs.count - cap)
         }
     }
 

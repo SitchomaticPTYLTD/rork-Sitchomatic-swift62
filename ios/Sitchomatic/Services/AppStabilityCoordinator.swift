@@ -69,7 +69,7 @@ final class AppStabilityCoordinator {
     private func computeCheckInterval() -> TimeInterval {
         if crashProtection.isMemoryDeathSpiral { return 3 }
         if consecutiveUnhealthyChecks > 3 { return 5 }
-        let anyBatchRunning = LoginViewModel.shared.isRunning || PPSRAutomationViewModel.shared.isRunning
+        let anyBatchRunning = LoginViewModel.shared.isRunning || PPSRAutomationViewModel.shared.isRunning || UnifiedSessionViewModel.shared.isRunning
         return anyBatchRunning ? 8 : 15
     }
 
@@ -79,10 +79,12 @@ final class AppStabilityCoordinator {
         let webViewCount = WebViewTracker.shared.activeCount
         let loginRunning = LoginViewModel.shared.isRunning
         let ppsrRunning = PPSRAutomationViewModel.shared.isRunning
+        let unifiedRunning = UnifiedSessionViewModel.shared.isRunning
         let deathSpiral = crashProtection.isMemoryDeathSpiral
         let watchdogCount = DeadSessionDetector.shared.activeWatchdogCount
 
-        let webViewLeakSuspected = webViewCount > 0 && !loginRunning && !ppsrRunning
+        let anyBatchRunning = loginRunning || ppsrRunning || unifiedRunning
+        let webViewLeakSuspected = webViewCount > 0 && !anyBatchRunning
 
         let healthy = memMB < crashProtection.recommendedMaxConcurrency * 500
             && !deathSpiral
@@ -115,14 +117,6 @@ final class AppStabilityCoordinator {
             handleWebViewLeak(count: webViewCount)
         }
 
-        if deathSpiral && (loginRunning || ppsrRunning) {
-            logger.log("StabilityCoordinator: death spiral with active batch — persisting state before potential crash", category: .system, level: .critical)
-            PersistentFileStorageService.shared.forceSave()
-            LoginViewModel.shared.persistCredentialsNow()
-            PPSRAutomationViewModel.shared.persistCardsNow()
-            UnifiedSessionViewModel.shared.persistSessionsNow()
-        }
-
         if consecutiveUnhealthyChecks >= 5 {
             handleProlongedDegradation()
         }
@@ -133,7 +127,7 @@ final class AppStabilityCoordinator {
         }
 
         if consecutiveUnhealthyChecks > 0 && consecutiveUnhealthyChecks % 3 == 0 {
-            logger.log("StabilityCoordinator: \(report.summary) | \(AIPredictiveConcurrencyGovernor.shared.diagnosticSummary) | \(AIWebViewMemoryLifecycleManager.shared.diagnosticSummary)", category: .system, level: .warning)
+            logger.log("StabilityCoordinator: \(report.summary)", category: .system, level: .warning)
         }
     }
 
@@ -191,11 +185,12 @@ final class AppStabilityCoordinator {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(120))
                 guard !Task.isCancelled, let self else { return }
-                let anyRunning = LoginViewModel.shared.isRunning || PPSRAutomationViewModel.shared.isRunning
+                let anyRunning = LoginViewModel.shared.isRunning || PPSRAutomationViewModel.shared.isRunning || UnifiedSessionViewModel.shared.isRunning
                 if anyRunning {
                     PersistentFileStorageService.shared.forceSave()
                     LoginViewModel.shared.persistCredentialsNow()
                     PPSRAutomationViewModel.shared.persistCardsNow()
+                    UnifiedSessionViewModel.shared.persistSessionsNow()
                     self.logger.log("StabilityCoordinator: periodic state persistence (batch active)", category: .persistence, level: .debug)
                 }
             }

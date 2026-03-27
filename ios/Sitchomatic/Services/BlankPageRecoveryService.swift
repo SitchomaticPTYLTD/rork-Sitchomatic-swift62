@@ -24,20 +24,13 @@ class BlankPageRecoveryService {
     }
 
     private func cancellationSafeSleep(milliseconds ms: Int) async {
-        let start = Date()
-        let target = TimeInterval(ms) / 1000.0
-        while Date().timeIntervalSince(start) < target {
-            if Task.isCancelled { return }
-            let remaining = target - Date().timeIntervalSince(start)
-            let chunk = min(remaining, 0.5)
-            guard chunk > 0 else { break }
-            try? await Task.sleep(for: .seconds(chunk))
-            if Task.isCancelled { return }
-        }
+        guard !Task.isCancelled else { return }
+        try? await Task.sleep(for: .milliseconds(ms))
     }
 
     private func cancellationSafeSleepSeconds(_ seconds: Int) async {
-        await cancellationSafeSleep(milliseconds: seconds * 1000)
+        guard !Task.isCancelled else { return }
+        try? await Task.sleep(for: .seconds(seconds))
     }
 
     func waitForNonBlankLoginSession(

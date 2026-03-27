@@ -7,14 +7,6 @@ final class MemoryPressureMonitor {
 
     private var observers: [() -> Void] = []
     private var isRegistered: Bool = false
-    private var proactivePollingTask: Task<Void, Never>?
-    private var consecutiveHighMemory: Int = 0
-    private let warningThresholdMB: Int = 300
-    private let criticalThresholdMB: Int = 450
-    private let severeThresholdMB: Int = 600
-
-    private var memoryTrend: [Int] = []
-    private let trendWindowSize: Int = 10
     private var lastTierTriggered: MemoryTier = .normal
     private var tierEscalationCount: Int = 0
 
@@ -82,15 +74,4 @@ final class MemoryPressureMonitor {
         }
     }
 
-    private func classifyMemoryTier(mb: Int) -> MemoryTier {
-        if mb > severeThresholdMB { return .severe }
-        if mb > criticalThresholdMB { return .critical }
-        if mb > warningThresholdMB { return .warning }
-        if mb > warningThresholdMB / 2 { return .elevated }
-        return .normal
-    }
-
-    var currentTier: MemoryTier {
-        classifyMemoryTier(mb: CrashProtectionService.shared.currentMemoryUsageMB())
-    }
 }

@@ -8,7 +8,6 @@ final class CrashProtectionService {
     private let logger = DebugLogger.shared
     private let memoryMonitor = MemoryMonitor()
     private var memoryTrimTimer: Task<Void, Never>?
-    private var continuousLogFlushTask: Task<Void, Never>?
     private var isRegistered: Bool = false
 
     private var emergencyBatchKillCount: Int = 0
@@ -210,6 +209,10 @@ final class CrashProtectionService {
                 logger.log("CrashProtection: EMERGENCY — force-stopping PPSR batch (memory: \(usedMB)MB)", category: .system, level: .critical)
                 PPSRAutomationViewModel.shared.emergencyStop()
             }
+            if UnifiedSessionViewModel.shared.isRunning {
+                logger.log("CrashProtection: EMERGENCY — force-stopping unified batch (memory: \(usedMB)MB)", category: .system, level: .critical)
+                UnifiedSessionViewModel.shared.emergencyStop()
+            }
         }
 
         if tier.killBatches {
@@ -241,6 +244,7 @@ final class CrashProtectionService {
             PersistentFileStorageService.shared.forceSave()
             LoginViewModel.shared.persistCredentialsNow()
             PPSRAutomationViewModel.shared.persistCardsNow()
+            UnifiedSessionViewModel.shared.persistSessionsNow()
         }
         return now
     }

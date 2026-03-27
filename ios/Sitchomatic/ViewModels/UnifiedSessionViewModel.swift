@@ -177,6 +177,15 @@ class UnifiedSessionViewModel {
                         break
                     }
 
+                    if !CrashProtectionService.shared.isMemorySafeForNewSession {
+                        self.log("Memory pressure — waiting before spawning next unified session", level: .warning)
+                        let recovered = await CrashProtectionService.shared.waitForMemoryToDrop(timeout: 15)
+                        if !recovered || Task.isCancelled {
+                            self.isStopping = true
+                            break
+                        }
+                    }
+
                     while self.isPaused && !self.isStopping && !Task.isCancelled {
                         try? await Task.sleep(for: .milliseconds(500))
                     }

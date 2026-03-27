@@ -167,6 +167,7 @@ class PPSRAutomationViewModel {
     private var cardsSaveTask: Task<Void, Never>?
     private var heartbeatTask: Task<Void, Never>?
     private var forceStopTask: Task<Void, Never>?
+    private var autoRetryTask: Task<Void, Never>?
     private var sessionHeartbeatTimeout: TimeInterval {
         TimeoutResolver.resolveHeartbeatTimeout(max(90, testTimeout))
     }
@@ -740,6 +741,8 @@ class PPSRAutomationViewModel {
 
     func emergencyStop() {
         logger.log("PPSRAutomationViewModel: EMERGENCY STOP triggered by crash protection", category: .system, level: .critical)
+        autoRetryTask?.cancel()
+        autoRetryTask = nil
         batchTask?.cancel()
         batchTask = nil
         forceFinalizeBatch()
@@ -1105,6 +1108,8 @@ class PPSRAutomationViewModel {
     }
 
     func stopQueue() {
+        autoRetryTask?.cancel()
+        autoRetryTask = nil
         cancelPauseCountdown()
         isStopping = true
         isPaused = false
@@ -1307,9 +1312,10 @@ class PPSRAutomationViewModel {
                 }
                 let backoffDelay = Double(autoRetryBackoffCounts.values.max() ?? 1) * 5.0
                 log("Auto-retry: \(retryCount) card(s) scheduled for retry in \(Int(backoffDelay))s", level: .info)
-                Task {
+                autoRetryTask?.cancel()
+                autoRetryTask = Task {
                     try? await Task.sleep(for: .seconds(backoffDelay))
-                    guard !self.isRunning else { return }
+                    guard !Task.isCancelled, !self.isRunning else { return }
                     self.testSelectedCards(retryCards)
                 }
             }
@@ -1451,8 +1457,9 @@ class PPSRAutomationViewModel {
         let batch = pendingLogs
         pendingLogs.removeAll()
         globalLogs.insert(contentsOf: batch.reversed(), at: 0)
-        if globalLogs.count > 1500 {
-            globalLogs.removeLast(globalLogs.count - 1500)
+        let cap = isRunning ? 800 : 1500
+        if globalLogs.count > cap {
+            globalLogs.removeLast(globalLogs.count - cap)
         }
     }
 
