@@ -242,7 +242,7 @@ class PPSRAutomationEngine {
 
         if !appReady.ready && appReady.fieldsFound == 0 {
             check.logs.append(PPSRLogEntry(message: "Healing: dumping page structure for diagnostics...", level: .info))
-            let structure = await session.dumpPageStructure() ?? "(empty)"
+            let structure = await session.dumpPageStructure() ?? ""
             logger.log("Page structure dump: \(structure.prefix(500))", category: .automation, level: .debug, sessionId: sessionId)
             check.logs.append(PPSRLogEntry(message: "Page structure: \(structure.prefix(300))", level: .warning))
 
