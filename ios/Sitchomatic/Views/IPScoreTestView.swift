@@ -520,8 +520,8 @@ struct IPScoreTestView: View {
         NavigationStack {
             List {
                 Section("Connection Mode") {
-                    LabeledContent("Joe") { Text(proxyService.networkSummary(for: .joe)) }
-                    LabeledContent("Ignition") { Text(proxyService.networkSummary(for: .ignition)) }
+                    LabeledContent("JoePoint") { Text(proxyService.networkSummary(for: .joe)) }
+                    LabeledContent("Ignition Lite") { Text(proxyService.networkSummary(for: .ignition)) }
                 }
 
                 if deviceProxy.isEnabled {

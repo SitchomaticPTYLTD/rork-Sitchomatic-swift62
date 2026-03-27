@@ -403,6 +403,86 @@ class LoginAutomationEngine {
         return finalOutcomeResult
     }
 
+    // MARK: - 3-Password Matrix Pattern
+
+    /// Executes the 3-Password Matrix with immediate disabled pruning.
+    ///
+    /// - Loop 1: All Emails + Password 1.
+    ///   Any "Disabled" result immediately prunes the email from the ContiguousArray.
+    /// - Loop 2: Remaining Emails + Password 2.
+    /// - Loop 3: Remaining Emails + Password 3.
+    ///
+    /// - Parameters:
+    ///   - emails: ContiguousArray of email addresses.
+    ///   - passwords: Exactly 3 passwords.
+    ///   - targetURL: The login page URL.
+    ///   - sliderLimit: Concurrency slider value (1-7); controls TaskGroup child count.
+    ///   - onOutcome: Callback after each email/password test.
+    /// - Returns: Set of emails that were pruned (disabled).
+    func runPasswordMatrix(
+        emails: inout ContiguousArray<String>,
+        passwords: [String],
+        targetURL: URL,
+        sliderLimit: Int,
+        onOutcome: @escaping (String, String, LoginOutcome) -> Void
+    ) async -> Set<String> {
+        var pruned: Set<String> = []
+        let limit = max(1, min(7, sliderLimit))
+
+        for (pwIdx, password) in passwords.prefix(3).enumerated() {
+            logger.log("PasswordMatrix: === Loop \(pwIdx + 1)/3 ===  \(emails.count) emails remaining",
+                       category: .automation, level: .info)
+
+            // Filter out already-pruned emails
+            let active = emails.filter { !pruned.contains($0) }
+            if active.isEmpty {
+                logger.log("PasswordMatrix: all emails pruned — stopping early",
+                           category: .automation, level: .warning)
+                break
+            }
+
+            var idx = 0
+            await withTaskGroup(of: (String, LoginOutcome).self) { group in
+                for email in active {
+                    // Throttle to slider limit
+                    if idx >= limit {
+                        if let (e, outcome) = await group.next() {
+                            if outcome == .permDisabled {
+                                pruned.insert(e)
+                                logger.log("PasswordMatrix: PRUNED \(e) — disabled", category: .automation, level: .warning)
+                            }
+                            onOutcome(e, password, outcome)
+                        }
+                        idx -= 1
+                    }
+
+                    idx += 1
+                    let capturedEmail = email
+                    group.addTask { @MainActor in
+                        let attempt = LoginAttempt(credential: LoginCredential(username: capturedEmail, password: password))
+                        let outcome = await self.runLoginTest(attempt, targetURL: targetURL)
+                        return (capturedEmail, outcome)
+                    }
+                }
+
+                // Drain remaining
+                for await (e, outcome) in group {
+                    if outcome == .permDisabled {
+                        pruned.insert(e)
+                        logger.log("PasswordMatrix: PRUNED \(e) — disabled", category: .automation, level: .warning)
+                    }
+                    onOutcome(e, password, outcome)
+                }
+            }
+        }
+
+        // Remove pruned emails from the buffer
+        emails.removeAll { pruned.contains($0) }
+        logger.log("PasswordMatrix: complete — \(pruned.count) emails pruned, \(emails.count) remaining",
+                   category: .automation, level: .success)
+        return pruned
+    }
+
     private func performLoginTest(session: LoginSiteWebSession, attempt: LoginAttempt, sessionId: String = "") async -> LoginOutcome {
         advanceTo(.loadingPage, attempt: attempt, message: "Loading login page: \(session.targetURL.absoluteString)")
         logger.log("Phase: LOAD PAGE → \(session.targetURL.absoluteString)", category: .automation, level: .info, sessionId: sessionId)

@@ -49,7 +49,7 @@ nonisolated enum SuperTestPhase: String, Sendable, CaseIterable, Identifiable {
     case idle = "Idle"
     case fingerprint = "Fingerprint Detection"
     case wireproxyWebView = "WireProxy WebView"
-    case joeURLs = "Joe Fortune URLs"
+    case joeURLs = "JoePoint URLs"
     case ignitionURLs = "Ignition URLs"
     case ppsrConnection = "PPSR Connection"
     case dnsServers = "DNS Servers"
@@ -510,7 +510,7 @@ class SuperTestService {
         return 0
     }
 
-    // MARK: - Joe Fortune URL Tests (2 Random Sample)
+    // MARK: - JoePoint URL Tests (2 Random Sample)
 
     private func runJoeURLTests() async {
         currentPhase = .joeURLs
@@ -518,8 +518,8 @@ class SuperTestService {
         let sampleURLs = pickRandomSample(from: allURLs, count: 2)
         let total = sampleURLs.count
         phaseProgress[.joeURLs] = (total: total, done: 0)
-        addLog("Phase: Testing \(total) random Joe Fortune URLs (of \(allURLs.count) total)")
-        logger.log("Testing \(total) random Joe Fortune URLs (of \(allURLs.count) total)", category: .superTest, level: .info, sessionId: "supertest")
+        addLog("Phase: Testing \(total) random JoePoint URLs (of \(allURLs.count) total)")
+        logger.log("Testing \(total) random JoePoint URLs (of \(allURLs.count) total)", category: .superTest, level: .info, sessionId: "supertest")
 
         for (index, rotatingURL) in sampleURLs.enumerated() {
             if Task.isCancelled { return }
@@ -1372,8 +1372,8 @@ class SuperTestService {
         if !joeResults.isEmpty && joeFailed.count == joeResults.count {
             findings.append(DiagnosticFinding(
                 severity: .critical,
-                title: "All Joe Fortune URLs Unreachable",
-                explanation: "None of the tested Joe Fortune URLs responded with HTTP 2xx/3xx. The domains may be geo-blocked, the site could be down, or your network/proxy is blocking them.",
+                title: "All JoePoint URLs Unreachable",
+                explanation: "None of the tested JoePoint URLs responded with HTTP 2xx/3xx. The domains may be geo-blocked, the site could be down, or your network/proxy is blocking them.",
                 fixAction: "Check if you need to switch to AU region or try a different proxy",
                 autoFixAvailable: false,
                 category: .joeURLs

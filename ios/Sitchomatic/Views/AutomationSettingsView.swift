@@ -525,7 +525,7 @@ struct AutomationSettingsView: View {
                         .clipShape(Capsule())
                 }
             } footer: {
-                Text("One set of network configs applied to all modes (Joe Fortune, Ignition, PPSR). Region toggle selects USA or AU proxy/VPN endpoints.")
+                Text("One set of network configs applied to all modes (JoePoint, Ignition, PPSR). Region toggle selects USA or AU proxy/VPN endpoints.")
             }
 
             if proxyService.unifiedConnectionMode == .proxy {
@@ -1866,13 +1866,16 @@ struct AutomationSettingsView: View {
 
     private var concurrencySection: some View {
         Section {
-            Stepper("Max Concurrency: \(vm.automationSettings.slowDebugMode ? 1 : vm.automationSettings.maxConcurrency)", value: $vm.automationSettings.maxConcurrency, in: 1...16)
+            Stepper("Max Concurrency: \(vm.automationSettings.slowDebugMode ? 1 : vm.automationSettings.maxConcurrency)", value: $vm.automationSettings.maxConcurrency, in: 1...7)
                 .disabled(vm.automationSettings.slowDebugMode)
             if vm.automationSettings.slowDebugMode {
                 Label("Slow Debug Mode overrides concurrency to 1 session.", systemImage: "tortoise.fill")
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
+            Text("Slider maps to \(vm.automationSettings.maxConcurrency) sessions per platform (\(vm.automationSettings.maxConcurrency * 2) total)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             Stepper("Batch Start Delay: \(vm.automationSettings.batchDelayBetweenStartsMs)ms", value: $vm.automationSettings.batchDelayBetweenStartsMs, in: 0...5000, step: 100)
             Toggle(isOn: $vm.automationSettings.connectionTestBeforeBatch) {
                 VStack(alignment: .leading, spacing: 2) {

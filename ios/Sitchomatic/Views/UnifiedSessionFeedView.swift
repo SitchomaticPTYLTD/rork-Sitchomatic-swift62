@@ -280,7 +280,7 @@ struct UnifiedSessionFeedView: View {
                     Text("Login Testing V4.1")
                         .font(.title3.bold())
                     HStack(spacing: 4) {
-                        Text("Joe Fortune + Ignition")
+                        Text("JoePoint + Ignition")
                             .font(.system(.caption2, design: .monospaced))
                             .foregroundStyle(.secondary)
                         if vm.stealthEnabled {
@@ -488,7 +488,7 @@ struct UnifiedSessionFeedView: View {
 
             Text("Login Testing")
                 .font(.title3.bold())
-            Text("Import credentials to begin paired testing.\nEach credential tests Joe Fortune + Ignition simultaneously\nwith shared proxy & fingerprint identity.")
+            Text("Import credentials to begin paired testing.\nEach credential tests JoePoint + Ignition simultaneously\nwith shared proxy & fingerprint identity.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -868,8 +868,8 @@ struct UnifiedSessionDetailSheet: View {
             List {
                 Section {
                     HStack(spacing: 16) {
-                        siteResultPill(icon: "suit.spade.fill", name: "Joe", result: session.joeSiteResult, siteColor: .green)
-                        siteResultPill(icon: "flame.fill", name: "Ignition", result: session.ignitionSiteResult, siteColor: .orange)
+                        siteResultPill(icon: "suit.spade.fill", name: "JoePoint", result: session.joeSiteResult, siteColor: .green)
+                        siteResultPill(icon: "flame.fill", name: "Ignition Lite", result: session.ignitionSiteResult, siteColor: .orange)
                     }
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
@@ -948,7 +948,7 @@ struct UnifiedSessionDetailSheet: View {
                     }
                 }
 
-                Section("Joe Fortune — \(session.joeSiteResult.shortLabel) (\(session.joeAttempts.count)/\(session.maxAttempts))") {
+                Section("JoePoint — \(session.joeSiteResult.shortLabel) (\(session.joeAttempts.count)/\(session.maxAttempts))") {
                     if session.joeAttempts.isEmpty {
                         Text("No attempts yet").foregroundStyle(.secondary)
                     } else {

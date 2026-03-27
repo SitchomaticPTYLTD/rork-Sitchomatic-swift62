@@ -338,7 +338,7 @@ struct FlowRecorderView: View {
         NavigationStack {
             Form {
                 Section("Flow Name") {
-                    TextField("e.g. Joe Fortune Login", text: $vm.flowName)
+                    TextField("e.g. JoePoint Login", text: $vm.flowName)
                 }
 
                 Section("Recording Summary") {

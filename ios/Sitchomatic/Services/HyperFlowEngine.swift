@@ -121,6 +121,25 @@ public final class WeakTrampolineProxy: NSObject, WKScriptMessageHandler {
     }
 }
 
+// MARK: - 4b. Apex Message Proxy (WKScriptMessageHandlerWithReply)
+
+/// Zero-bridge proxy for the Apex session engine.
+/// Supports WKScriptMessageHandlerWithReply for native async JS ↔ Swift
+/// communication without JSON stringification overhead.
+public final class ApexMessageProxy: NSObject, WKScriptMessageHandler {
+    private weak var target: (any WKScriptMessageHandler)?
+
+    public init(target: any WKScriptMessageHandler) {
+        self.target = target
+        super.init()
+    }
+
+    public func userContentController(_ userContentController: WKUserContentController,
+                                       didReceive message: WKScriptMessage) {
+        target?.userContentController(userContentController, didReceive: message)
+    }
+}
+
 // MARK: - 5. The Paired Automation Session
 
 /// Coordinates exactly two WebViews that share state with each other,

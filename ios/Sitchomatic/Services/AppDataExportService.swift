@@ -807,7 +807,7 @@ class AppDataExportService {
         let proxyService = ProxyRotationService.shared
         var lines: [String] = ["--- PROXIES ---"]
 
-        lines.append("Joe Fortune (\(proxyService.savedProxies.count)):")
+        lines.append("JoePoint (\(proxyService.savedProxies.count)):")
         for proxy in proxyService.savedProxies {
             let status = proxy.isWorking ? "OK" : (proxy.lastTested != nil ? "DEAD" : "UNTESTED")
             lines.append("  [\(status)] \(proxy.displayString)")
@@ -843,7 +843,7 @@ class AppDataExportService {
         let proxyService = ProxyRotationService.shared
         var lines: [String] = ["--- OPENVPN CONFIGS ---"]
 
-        lines.append("Joe Fortune (\(proxyService.joeVPNConfigs.count)):")
+        lines.append("JoePoint (\(proxyService.joeVPNConfigs.count)):")
         for vpn in proxyService.joeVPNConfigs {
             let status = vpn.isEnabled ? "ENABLED" : "DISABLED"
             lines.append("  [\(status)] \(vpn.fileName) - \(vpn.displayString)")
@@ -864,7 +864,7 @@ class AppDataExportService {
         lines.append("")
         lines.append("--- WIREGUARD CONFIGS ---")
 
-        lines.append("Joe Fortune (\(proxyService.joeWGConfigs.count)):")
+        lines.append("JoePoint (\(proxyService.joeWGConfigs.count)):")
         for wg in proxyService.joeWGConfigs {
             let status = wg.isEnabled ? "ENABLED" : "DISABLED"
             lines.append("  [\(status)] \(wg.fileName) - \(wg.displayString)")
@@ -934,7 +934,7 @@ class AppDataExportService {
         let urlService = LoginURLRotationService.shared
         var lines: [String] = ["--- URL PERFORMANCE HISTORY ---"]
 
-        lines.append("\nJoe Fortune URLs:")
+        lines.append("\nJoePoint URLs:")
         for url in urlService.joeURLs.sorted(by: { $0.performanceScore > $1.performanceScore }) {
             lines.append("  \(url.urlString)")
             lines.append("    Enabled: \(url.isEnabled) | Attempts: \(url.totalAttempts) | Success: \(url.formattedSuccessRate) | Avg: \(url.formattedAvgResponse) | Fails: \(url.failCount)")

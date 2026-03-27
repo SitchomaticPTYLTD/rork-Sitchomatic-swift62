@@ -7,9 +7,10 @@ import UIKit
 @Observable
 @MainActor
 class DualFindViewModel {
-    var emails: [String] = []
+    /// ContiguousArray for zero-latency email access on A19 Pro silicon.
+    var emails: ContiguousArray<String> = []
     var passwords: [String] = ["", "", ""]
-    var sessionCount: DualFindSessionCount = .six
+    var sessionCount: DualFindSessionCount = .three
     var emailInputText: String = ""
 
     var isRunning: Bool = false
@@ -47,7 +48,7 @@ class DualFindViewModel {
     var stealthEnabled: Bool = true
     var debugMode: Bool = false
     var testTimeout: TimeInterval = 90
-    var maxConcurrency: Int = 8
+    var maxConcurrency: Int = 7
     var automationSettings: AutomationSettings = AutomationSettings()
 
     private var resumePoint: DualFindResumePoint?
@@ -79,6 +80,7 @@ class DualFindViewModel {
     private let networkFactory = NetworkSessionFactory.shared
     private let blacklistService = BlacklistService.shared
     private let calibrationService = LoginCalibrationService.shared
+    private let identityActor = IdentityActor.shared
 
     var isPaused: Bool {
         isJoePaused && isIgnPaused
@@ -151,7 +153,7 @@ class DualFindViewModel {
             UserDefaults.standard.set(data, forKey: "automation_settings_v1")
         }
 
-        emails = parsed
+        emails = ContiguousArray(parsed)
         totalEmails = parsed.count
         joeEmailIndex = 0
         joePasswordIndex = 0
@@ -172,14 +174,14 @@ class DualFindViewModel {
         logSettingsSummary()
         log("Starting Dual Find: \(totalEmails) emails × 3 passwords × 2 sites = \(totalEmails * 3 * 2) combinations")
         log("Session mode: \(sessionCount.label) — persistent sessions, field-clear pattern")
-        log("TRUE DETECTION enforced as default for both Joe and Ignition")
+        log("TRUE DETECTION enforced as default for both JoePoint and Ignition Lite")
 
         isRunning = true
         DeviceProxyService.shared.notifyBatchStart()
         backgroundService.beginExtendedBackgroundExecution(reason: "Dual Find Account scan")
 
         runTask = Task {
-            await executeRun(emails: emails, passwords: validPasswords)
+            await executeRun(emails: Array(emails), passwords: validPasswords)
         }
     }
 
@@ -188,7 +190,7 @@ class DualFindViewModel {
 
         reloadAllSettings()
 
-        emails = rp.emails
+        emails = ContiguousArray(rp.emails)
         totalEmails = rp.emails.count
         joeEmailIndex = rp.joeEmailIndex
         joePasswordIndex = rp.joePasswordIndex
@@ -196,7 +198,7 @@ class DualFindViewModel {
         ignPasswordIndex = rp.ignPasswordIndex
         disabledEmails = Set(rp.disabledEmails)
         hits = rp.foundLogins
-        sessionCount = DualFindSessionCount(rawValue: rp.sessionCount) ?? .six
+        sessionCount = DualFindSessionCount(rawValue: rp.sessionCount) ?? .three
         joeCompletedTests = rp.joeCompletedTests
         ignCompletedTests = rp.ignCompletedTests
         logs.removeAll()
@@ -219,7 +221,7 @@ class DualFindViewModel {
         backgroundService.beginExtendedBackgroundExecution(reason: "Dual Find Account resume")
 
         runTask = Task {
-            await executeRun(emails: emails, passwords: passwords)
+            await executeRun(emails: Array(emails), passwords: passwords)
         }
     }
 
@@ -283,7 +285,7 @@ class DualFindViewModel {
     private func platformLoop(site: LoginTargetSite, emails: [String], passwords: [String]) async {
         let perSite = sessionCount.perSite
         let siteLabel = site == .joefortune ? "JOE" : "IGN"
-        let platformName = site == .joefortune ? "Joe Fortune" : "Ignition Casino"
+        let platformName = site == .joefortune ? "JoePoint" : "Ignition Lite"
         let isJoe = site == .joefortune
 
         let startPwIdx = isJoe ? joePasswordIndex : ignPasswordIndex
@@ -394,7 +396,7 @@ class DualFindViewModel {
 
     private func sessionEmailLoop(sessionIndex: Int, site: LoginTargetSite, emails: [String], password: String, passwordIndex: Int) async {
         let siteLabel = site == .joefortune ? "JOE" : "IGN"
-        let platformName = site == .joefortune ? "Joe Fortune" : "Ignition Casino"
+        let platformName = site == .joefortune ? "JoePoint" : "Ignition Lite"
         let label = "\(siteLabel)-\(sessionIndex + 1)"
         let sessionInfoId = "\(platformName)_\(sessionIndex)"
         let isJoe = site == .joefortune
@@ -1005,10 +1007,10 @@ class DualFindViewModel {
         sessions.removeAll()
         let perSite = sessionCount.perSite
         for i in 0..<perSite {
-            sessions.append(DualFindSessionInfo(index: i, platform: "Joe Fortune"))
+            sessions.append(DualFindSessionInfo(index: i, platform: "JoePoint"))
         }
         for i in 0..<perSite {
-            sessions.append(DualFindSessionInfo(index: i, platform: "Ignition Casino"))
+            sessions.append(DualFindSessionInfo(index: i, platform: "Ignition Lite"))
         }
     }
 
@@ -1051,7 +1053,7 @@ class DualFindViewModel {
             joePasswordIndex: joePasswordIndex,
             ignEmailIndex: ignEmailIndex,
             ignPasswordIndex: ignPasswordIndex,
-            emails: emails,
+            emails: Array(emails),
             passwords: passwords,
             sessionCount: sessionCount.rawValue,
             timestamp: Date(),

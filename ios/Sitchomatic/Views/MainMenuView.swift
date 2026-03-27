@@ -123,7 +123,7 @@ struct MainMenuView: View {
                             .lineSpacing(2)
                             .shadow(color: .black.opacity(0.8), radius: 4)
 
-                        Text("Joe + Ignition · Paired Testing")
+                        Text("JoePoint + Ignition Lite · Paired Testing")
                             .font(.system(size: 9, weight: .semibold, design: .monospaced))
                             .foregroundStyle(.white.opacity(0.6))
 

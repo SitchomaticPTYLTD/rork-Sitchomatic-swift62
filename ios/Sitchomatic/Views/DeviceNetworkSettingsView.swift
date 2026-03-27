@@ -66,7 +66,7 @@ struct DeviceNetworkSettingsView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Device-Wide Network")
                         .font(.subheadline.bold())
-                    Text("Applies to Joe Fortune, Ignition & PPSR")
+                    Text("Applies to JoePoint, Ignition & PPSR")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -84,7 +84,7 @@ struct DeviceNetworkSettingsView: View {
                 .clipShape(.rect(cornerRadius: 8))
             }
         } footer: {
-            Text("All network configurations are shared across every mode in this app. Changing settings here affects Joe Fortune, Ignition, and PPSR simultaneously.")
+            Text("All network configurations are shared across every mode in this app. Changing settings here affects JoePoint, Ignition, and PPSR simultaneously.")
         }
     }
 
@@ -688,7 +688,7 @@ struct DeviceNetworkSettingsView: View {
         } header: {
             Label("Ignition Region", systemImage: "globe")
         } footer: {
-            Text("Only Ignition uses this region toggle. Joe Fortune and PPSR share the same configs regardless of region.")
+            Text("Only Ignition uses this region toggle. JoePoint and PPSR share the same configs regardless of region.")
         }
     }
 
@@ -750,7 +750,7 @@ struct DeviceNetworkSettingsView: View {
                                 .foregroundStyle(.primary)
                         }
                     }
-                    Text("All other Joe/Ignition URLs are auto-disabled on Direct/DNS to prevent resolution failures.")
+                    Text("All other JoePoint/Ignition Lite URLs are auto-disabled on Direct/DNS to prevent resolution failures.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

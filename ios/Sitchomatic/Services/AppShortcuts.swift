@@ -33,7 +33,7 @@ nonisolated struct OpenPPSRModeIntent: AppIntent {
 
 nonisolated struct OpenLoginTestingIntent: AppIntent {
     static var title: LocalizedStringResource = "Open Login Testing"
-    static var description: IntentDescription = "Open the unified login testing mode (Joe Fortune + Ignition)"
+    static var description: IntentDescription = "Open the unified login testing mode (JoePoint + Ignition)"
     static var openAppWhenRun: Bool = true
 
     @MainActor

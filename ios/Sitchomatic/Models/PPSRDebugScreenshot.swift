@@ -117,7 +117,7 @@ class PPSRDebugScreenshot: Identifiable {
 
     var isJoe: Bool { site.lowercased().contains("joe") }
     var isIgnition: Bool { site.lowercased().contains("ign") }
-    var siteLabel: String { isJoe ? "Joe" : isIgnition ? "Ignition" : "Unknown" }
+    var siteLabel: String { isJoe ? "JoePoint" : isIgnition ? "Ignition Lite" : "Unknown" }
     var siteIcon: String { isJoe ? "suit.spade.fill" : isIgnition ? "flame.fill" : "globe" }
     var siteColor: SwiftUI.Color { isJoe ? .green : isIgnition ? .orange : .gray }
 

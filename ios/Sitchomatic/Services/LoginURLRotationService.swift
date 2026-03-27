@@ -152,7 +152,7 @@ class LoginURLRotationService {
     }
 
     var currentSiteName: String {
-        isIgnitionMode ? "Ignition Casino" : "Joe Fortune"
+        isIgnitionMode ? "Ignition Lite" : "JoePoint"
     }
 
     var currentIcon: String {

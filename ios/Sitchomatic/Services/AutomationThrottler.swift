@@ -54,7 +54,7 @@ actor AutomationThrottler {
 
     func updateMaxConcurrency(_ newMax: Int) {
         let old = maxConcurrency
-        maxConcurrency = max(1, min(10, newMax))
+        maxConcurrency = max(1, min(7, newMax))
         if maxConcurrency > old {
             resumeNextWaiterIfPossible()
         }
