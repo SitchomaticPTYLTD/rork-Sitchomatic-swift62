@@ -3,8 +3,8 @@ import Observation
 import UIKit
 
 nonisolated enum TestDebugSite: String, CaseIterable, Sendable {
-    case joe = "Joe Fortune"
-    case ignition = "Ignition Casino"
+    case joe = "JoePoint"
+    case ignition = "Ignition Lite"
 
     var targetSite: LoginTargetSite {
         switch self {

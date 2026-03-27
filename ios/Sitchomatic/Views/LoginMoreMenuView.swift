@@ -309,7 +309,7 @@ struct LoginMoreMenuView: View {
                     .clipShape(Capsule())
             }
         } footer: {
-            Text("Switching modes applies globally to Joe Fortune, Ignition, and PPSR.")
+            Text("Switching modes applies globally to JoePoint, Ignition, and PPSR.")
         }
     }
 

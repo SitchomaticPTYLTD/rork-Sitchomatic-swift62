@@ -444,7 +444,7 @@ struct ScreenshotDetailSheet: View {
             HStack {
                 Image(systemName: screenshot.site == "joe" ? "suit.spade.fill" : "flame.fill")
                     .foregroundStyle(screenshot.site == "joe" ? .green : .orange)
-                Text(screenshot.site == "joe" ? "JoeFortune" : "Ignition")
+                Text(screenshot.site == "joe" ? "JoePoint" : "Ignition Lite")
                     .font(.headline)
                 Spacer()
                 Text(screenshot.outcomeLabel)

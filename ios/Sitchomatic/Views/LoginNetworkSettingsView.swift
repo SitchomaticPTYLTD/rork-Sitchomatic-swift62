@@ -102,7 +102,7 @@ struct LoginNetworkSettingsView: View {
             Button {
                 guard !isValidatingURLs else { return }
                 isValidatingURLs = true
-                vm.log("Validating Joe Fortune URLs (static → www fallback)...")
+                vm.log("Validating JoePoint URLs (static → www fallback)...")
                 Task {
                     await vm.urlRotation.validateAndUpdateJoeURLs()
                     let enabled = vm.urlRotation.joeURLs.filter(\.isEnabled).count
@@ -113,7 +113,7 @@ struct LoginNetworkSettingsView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "checkmark.shield.fill").font(.title3).foregroundStyle(.green)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Validate Joe URLs").font(.subheadline.bold())
+                        Text("Validate JoePoint URLs").font(.subheadline.bold())
                         Text("Prefer static.* subdomain, fallback to www.*").font(.caption2).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -182,7 +182,7 @@ struct LoginNetworkSettingsView: View {
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "suit.spade.fill")
-                                Text("Joe").font(.subheadline.bold())
+                                Text("JoePoint").font(.subheadline.bold())
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -196,7 +196,7 @@ struct LoginNetworkSettingsView: View {
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "flame.fill")
-                                Text("Ignition").font(.subheadline.bold())
+                                Text("Ignition Lite").font(.subheadline.bold())
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -291,7 +291,7 @@ struct LoginNetworkSettingsView: View {
                     }
                 } header: {
                     let enabled = urlList.filter(\.isEnabled).count
-                    Text("\(urlViewingIgnition ? "Ignition" : "Joe") URLs (\(enabled)/\(urlList.count))")
+                    Text("\(urlViewingIgnition ? "Ignition Lite" : "JoePoint") URLs (\(enabled)/\(urlList.count))")
                 }
 
                 Section {
@@ -314,16 +314,16 @@ struct LoginNetworkSettingsView: View {
                     }
                     Button {
                         vm.urlRotation.resetToDefaults(forIgnition: urlViewingIgnition)
-                        vm.log("Reset \(urlViewingIgnition ? "Ignition" : "Joe") URLs to defaults", level: .success)
+                        vm.log("Reset \(urlViewingIgnition ? "Ignition Lite" : "JoePoint") URLs to defaults", level: .success)
                     } label: {
                         Label("Reset to Defaults", systemImage: "arrow.uturn.backward")
                     }
                     if !urlList.isEmpty {
                         Button(role: .destructive) {
                             vm.urlRotation.deleteAllURLs(forIgnition: urlViewingIgnition)
-                            vm.log("Deleted all \(urlViewingIgnition ? "Ignition" : "Joe") URLs")
+                            vm.log("Deleted all \(urlViewingIgnition ? "Ignition Lite" : "JoePoint") URLs")
                         } label: {
-                            Label("Delete All \(urlViewingIgnition ? "Ignition" : "Joe") URLs", systemImage: "trash")
+                            Label("Delete All \(urlViewingIgnition ? "Ignition Lite" : "JoePoint") URLs", systemImage: "trash")
                         }
                     }
                 } header: {

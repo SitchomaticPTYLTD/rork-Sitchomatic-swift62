@@ -69,7 +69,7 @@ public enum HyperFlowTaskFactory {
 
     // MARK: - Task Builders
 
-    /// Creates a Joe Fortune + Ignition dual-site login test pair.
+    /// Creates a JoePoint + Ignition dual-site login test pair.
     public static func loginDualSitePair(
         joeURL: URL? = nil,
         ignitionURL: URL? = nil
@@ -112,7 +112,7 @@ public enum HyperFlowTaskFactory {
     }
 
     /// Creates a batch of paired tasks for credential testing.
-    /// Maps credentials across Joe Fortune and Ignition pairs.
+    /// Maps credentials across JoePoint and Ignition pairs.
     public static func buildLoginBatch(
         joeURLs: [URL],
         ignitionURLs: [URL],
@@ -164,8 +164,8 @@ public enum HyperFlowTaskFactory {
 // MARK: - LoginTargetSite (preserved for backward compatibility)
 
 nonisolated enum LoginTargetSite: String, CaseIterable, Sendable {
-    case joefortune = "Joe Fortune"
-    case ignition = "Ignition Casino"
+    case joefortune = "JoePoint"
+    case ignition = "Ignition Lite"
 
     var url: URL {
         switch self {

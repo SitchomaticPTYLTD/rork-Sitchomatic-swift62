@@ -525,7 +525,7 @@ struct AutomationSettingsView: View {
                         .clipShape(Capsule())
                 }
             } footer: {
-                Text("One set of network configs applied to all modes (Joe Fortune, Ignition, PPSR). Region toggle selects USA or AU proxy/VPN endpoints.")
+                Text("One set of network configs applied to all modes (JoePoint, Ignition, PPSR). Region toggle selects USA or AU proxy/VPN endpoints.")
             }
 
             if proxyService.unifiedConnectionMode == .proxy {

@@ -79,7 +79,7 @@ class AIConfidenceAnalyzerService {
         }
 
         let systemPrompt = """
-        You classify login attempt outcomes for online casino websites (JoeFortune, Ignition Casino). \
+        You classify login attempt outcomes for online casino websites (JoeFortune, Ignition Lite). \
         Analyze the page content and return ONLY a JSON object. \
         Possible outcomes: "success" (logged in), "permDisabled" (account permanently disabled/suspended/closed), \
         "tempDisabled" (temporarily locked due to too many attempts), "noAcc" (wrong password or no account), \

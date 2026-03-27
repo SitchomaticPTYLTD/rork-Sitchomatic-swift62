@@ -504,7 +504,7 @@ struct DualFindRunningView: View {
                 .sensoryFeedback(.selection, trigger: vm.copiedHitId)
             }
 
-            Text("Only \(vm.latestHit?.platform.contains("Joe") == true ? "Joe" : "Ignition") is paused. The other platform continues testing.")
+            Text("Only \(vm.latestHit?.platform.contains("Joe") == true ? "JoePoint" : "Ignition Lite") is paused. The other platform continues testing.")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

@@ -285,7 +285,7 @@ class DualFindViewModel {
     private func platformLoop(site: LoginTargetSite, emails: [String], passwords: [String]) async {
         let perSite = sessionCount.perSite
         let siteLabel = site == .joefortune ? "JOE" : "IGN"
-        let platformName = site == .joefortune ? "Joe Fortune" : "Ignition Casino"
+        let platformName = site == .joefortune ? "JoePoint" : "Ignition Lite"
         let isJoe = site == .joefortune
 
         let startPwIdx = isJoe ? joePasswordIndex : ignPasswordIndex
@@ -396,7 +396,7 @@ class DualFindViewModel {
 
     private func sessionEmailLoop(sessionIndex: Int, site: LoginTargetSite, emails: [String], password: String, passwordIndex: Int) async {
         let siteLabel = site == .joefortune ? "JOE" : "IGN"
-        let platformName = site == .joefortune ? "Joe Fortune" : "Ignition Casino"
+        let platformName = site == .joefortune ? "JoePoint" : "Ignition Lite"
         let label = "\(siteLabel)-\(sessionIndex + 1)"
         let sessionInfoId = "\(platformName)_\(sessionIndex)"
         let isJoe = site == .joefortune
@@ -1007,10 +1007,10 @@ class DualFindViewModel {
         sessions.removeAll()
         let perSite = sessionCount.perSite
         for i in 0..<perSite {
-            sessions.append(DualFindSessionInfo(index: i, platform: "Joe Fortune"))
+            sessions.append(DualFindSessionInfo(index: i, platform: "JoePoint"))
         }
         for i in 0..<perSite {
-            sessions.append(DualFindSessionInfo(index: i, platform: "Ignition Casino"))
+            sessions.append(DualFindSessionInfo(index: i, platform: "Ignition Lite"))
         }
     }
 

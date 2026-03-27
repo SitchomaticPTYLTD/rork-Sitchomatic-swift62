@@ -123,7 +123,7 @@ nonisolated struct SessionRecoveryBatch: Codable, Sendable {
         batchId: String = UUID().uuidString,
         startedAt: Date = Date(),
         snapshots: [SessionRecoverySnapshot] = [],
-        siteMode: String = "Joe",
+        siteMode: String = "JoePoint",
         totalCredentials: Int = 0,
         completedCount: Int = 0
     ) {

@@ -433,8 +433,8 @@ struct SuperTestView: View {
     private func phaseName(_ phase: SuperTestPhase) -> String {
         switch phase {
         case .fingerprint: "Fingerprint"
-        case .joeURLs: "Joe URLs"
-        case .ignitionURLs: "Ignition URLs"
+        case .joeURLs: "JoePoint URLs"
+        case .ignitionURLs: "Ignition Lite URLs"
         case .ppsrConnection: "PPSR"
         case .dnsServers: "DNS"
         case .socks5Proxies: "Proxies"
