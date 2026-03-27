@@ -36,7 +36,7 @@ struct SitchomaticWidget: Widget {
             WidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("SitchomaticWidget")
+        .configurationDisplayName("Sitchomatic APEX Widget")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

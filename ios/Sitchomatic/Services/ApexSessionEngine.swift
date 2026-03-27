@@ -1,5 +1,5 @@
 // ApexSessionEngine.swift
-// Sitchomatic — Apex Edition
+// rork-Sitchomatic-APEX
 //
 // Actor-isolated session engine for A19 Pro Max / iOS 26.
 // Provides LoginSiteWebSession, LoginWebSession, BPointWebSession,

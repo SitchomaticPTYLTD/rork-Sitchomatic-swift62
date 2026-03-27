@@ -1,5 +1,5 @@
 // SitchomaticApexActor.swift
-// Sitchomatic — Apex Edition
+// rork-Sitchomatic-APEX
 //
 // Hardware-locked global actor for A19 Pro Max silicon.
 // Isolates all automation workloads from the Main Thread,
