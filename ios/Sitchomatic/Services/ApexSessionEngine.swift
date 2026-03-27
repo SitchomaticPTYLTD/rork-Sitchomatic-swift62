@@ -962,7 +962,7 @@ class LoginSiteWebSession: NSObject {
     func checkLoginButtonReadiness() async -> Bool {
         let js = """
         (function() {
-            var  = ['button[type="submit"]','input[type="submit"]','#login-submit','#loginButton','button.login-button'];
+            var selectors = ['button[type="submit"]','input[type="submit"]','#login-submit','#loginButton','button.login-button'];
             var loginTerms = ['log in','login','sign in','signin','submit'];
             var btn = null;
             for (var i = 0; i < selectors.length; i++) {
