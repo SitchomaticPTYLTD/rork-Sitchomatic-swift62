@@ -1,42 +1,41 @@
 import Foundation
 
-/// DateFormatters provides pre-configured date formatters.
-/// Note: DateFormatter is not thread-safe for concurrent access. These formatters
-/// are safe when used from the main thread (SwiftUI views, @MainActor contexts).
-/// For background-thread formatting, use Date.formatted() or create local instances.
-enum DateFormatters {
-    @MainActor static let timeWithMillis: DateFormatter = {
+/// Pre-configured date formatters for consistent date/time formatting throughout the app.
+/// These formatters are created once as static lets and are never mutated after initialization.
+/// They are primarily designed for use from the main thread (SwiftUI views, @MainActor contexts).
+nonisolated enum DateFormatters: Sendable {
+    static let timeWithMillis: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "HH:mm:ss.SSS"
         return f
     }()
 
-    @MainActor static let timeOnly: DateFormatter = {
+    static let timeOnly: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "HH:mm:ss"
         return f
     }()
 
-    @MainActor static let mediumDateTime: DateFormatter = {
+    static let mediumDateTime: DateFormatter = {
         let f = DateFormatter()
         f.dateStyle = .medium
         f.timeStyle = .short
         return f
     }()
 
-    @MainActor static let fullTimestamp: DateFormatter = {
+    static let fullTimestamp: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
         return f
     }()
 
-    @MainActor static let exportTimestamp: DateFormatter = {
+    static let exportTimestamp: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return f
     }()
 
-    @MainActor static let fileStamp: DateFormatter = {
+    static let fileStamp: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd_HHmm"
         return f

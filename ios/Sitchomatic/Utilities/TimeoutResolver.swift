@@ -22,6 +22,8 @@ enum TimeoutResolver {
         return settings
     }
 
+    /// Clears the cached automation settings. Call this when automation settings are
+    /// updated (e.g., saved to UserDefaults) to ensure the next access retrieves fresh data.
     static func invalidateCache() {
         cachedSettings = nil
         cachedSettingsTimestamp = .distantPast
