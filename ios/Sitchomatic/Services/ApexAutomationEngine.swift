@@ -185,9 +185,14 @@ final class ApexAutomationEngine {
         try? await Task.sleep(for: .seconds(5))
 
         // Inject credentials directly via async JS evaluation.
-        let safeUser = user.replacingOccurrences(of: "'", with: "\\'")
-        let safePass = pass.replacingOccurrences(of: "'", with: "\\'")
-        let injectScript = """
+        let safeUser = user.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+        let safePass = pass.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")        let injectScript = """
         (function() {
             var emailField = document.querySelector('#email');
             var passField = document.querySelector('#login-password');
