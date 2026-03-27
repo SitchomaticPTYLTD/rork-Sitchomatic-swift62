@@ -1,26 +1,26 @@
-# Remove Tier 4 & General UI Cleanup
+# Remove Tier 4 & General UI Cleanup — COMPLETE
 
-## What's being removed (Tier 4 — 6 files)
+## What was removed (Tier 4 — 6 files)
 
 1. **AI Insights Dashboard** — ViewModel + View showing system health, detection patterns, credential insights from deleted services
 2. **AI Pattern Discovery Dashboard** — ViewModel + View showing host combos, time heatmaps, proxy trends, convergence data
 3. **AI Session Pre-Conditioning Service** — Generates "recipes" (best proxy, stealth seed, timing profile) per host before each session
 4. **AI Outcome Rescue Engine** — Re-analyzes unsure outcomes using OCR, page signals, and AI to reclassify results
 
-## Files to delete (6)
+## Files deleted (6) - DONE
 
-- **Services:** AISessionPreConditioningService, AIOutcomeRescueEngine
-- **Views:** AIInsightsDashboardView, AIPatternDiscoveryDashboardView
-- **ViewModels:** AIInsightsViewModel, AIPatternDiscoveryViewModel
+- [x] **Services:** AISessionPreConditioningService, AIOutcomeRescueEngine
+- [x] **Views:** AIInsightsDashboardView, AIPatternDiscoveryDashboardView
+- [x] **ViewModels:** AIInsightsViewModel, AIPatternDiscoveryViewModel
 
-## Files to clean up (3)
+## Files cleaned up (3) - DONE
 
-- **LoginMoreMenuView** — Remove the "AI Insights" and "Pattern Discovery" navigation links from the Intelligence section. Keep the "Custom AI Tools" link if it still has a valid service behind it.
-- **LoginAutomationEngine** — Remove `aiPreConditioning` and `aiOutcomeRescue` properties. Remove all pre-conditioning recipe usage (lines ~106-112) and outcome rescue logic (lines ~388-430). The outcome just flows through directly without rescue attempts.
-- **PPSRAutomationEngine** — Remove `aiOutcomeRescue` and `aiPreConditioning` properties. Remove rescue attempt logic (lines ~480-503). The evaluation result is used directly.
+- [x] **LoginMoreMenuView** — Removed "AI Insights" and "Pattern Discovery" navigation links. "Custom AI Tools" link retained in Intelligence section.
+- [x] **LoginAutomationEngine** — Removed `aiPreConditioning` and `aiOutcomeRescue` properties and all related logic.
+- [x] **PPSRAutomationEngine** — Removed `aiOutcomeRescue` and `aiPreConditioning` properties and rescue attempt logic.
 
-## General UI cleanup
+## General UI cleanup - DONE
 
-- Check the Intelligence section in LoginMoreMenuView — if only "Custom AI Tools" remains, keep the section; if empty, remove the entire section
-- Verify no orphaned references remain from all previous tier removals
-- Ensure the app builds cleanly
+- [x] Intelligence section in LoginMoreMenuView shows only "Custom AI Tools" — kept
+- [x] No orphaned references remain from all previous tier removals
+- [x] App builds cleanly
