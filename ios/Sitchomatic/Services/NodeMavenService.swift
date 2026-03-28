@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import Network
+@preconcurrency import Network
 
 nonisolated enum NodeMavenProxyType: String, CaseIterable, Codable, Sendable {
     case residential = "residential"

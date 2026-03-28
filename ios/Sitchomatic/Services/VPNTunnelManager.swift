@@ -1,6 +1,6 @@
 import Foundation
 @preconcurrency import NetworkExtension
-import Network
+@preconcurrency import Network
 import Observation
 
 nonisolated enum VPNTunnelStatus: String, Sendable {

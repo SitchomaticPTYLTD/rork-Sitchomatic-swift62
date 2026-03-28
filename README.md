@@ -3,7 +3,7 @@
 > **The definitive iOS automation framework — rewritten for iOS 26 and Apple's A19 Pro Max silicon.**
 
 [![Platform](https://img.shields.io/badge/platform-iOS%2018%2B-blue)]()
-[![Swift](https://img.shields.io/badge/swift-5.10%2B-orange)]()
+[![Swift](https://img.shields.io/badge/swift-6.0-orange)]()
 [![Built with Rork](https://img.shields.io/badge/built%20with-Rork-purple)]()
 [![License](https://img.shields.io/badge/license-Proprietary-red)]()
 

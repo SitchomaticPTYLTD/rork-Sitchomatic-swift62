@@ -1,5 +1,5 @@
 import Foundation
-import Network
+@preconcurrency import Network
 import Observation
 
 nonisolated struct LocalProxyStats: Sendable {
@@ -195,7 +195,7 @@ class LocalProxyServer {
         healthMonitor.updateUpstream(proxy)
     }
 
-    func startHealthMonitoring(onFailover: @escaping () -> Void) {
+    func startHealthMonitoring(onFailover: @escaping @Sendable () -> Void) {
         healthMonitor.startMonitoring(upstream: upstreamProxy, onFailover: onFailover)
     }
 

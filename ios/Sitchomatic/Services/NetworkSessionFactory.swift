@@ -1,6 +1,6 @@
 import Foundation
-import WebKit
-import Network
+@preconcurrency import WebKit
+@preconcurrency import Network
 
 nonisolated enum ActiveNetworkConfig: Sendable {
     case direct

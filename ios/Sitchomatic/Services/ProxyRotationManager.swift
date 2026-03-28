@@ -69,7 +69,7 @@ class ProxyRotationManager {
         logger.log("DeviceProxy: rotated to \(activeEndpointLabel ?? "Unknown") (reason: \(reason))", category: .network, level: .info)
     }
 
-    func handleFailover(autoFailoverEnabled: Bool, onRotate: @escaping (String) -> Void) {
+    func handleFailover(autoFailoverEnabled: Bool, onRotate: @escaping @Sendable (String) -> Void) {
         guard autoFailoverEnabled else { return }
         if resilience.shouldThrottleFailover() {
             logger.log("DeviceProxy: FAILOVER throttled — backoff \(String(format: "%.1f", resilience.failoverBackoffSeconds))s remaining", category: .proxy, level: .warning)
@@ -86,7 +86,7 @@ class ProxyRotationManager {
 
     // MARK: - Timer
 
-    func restartRotationTimer(ipRoutingMode: IPRoutingMode, rotationInterval: RotationInterval, onRotate: @escaping (String) -> Void) {
+    func restartRotationTimer(ipRoutingMode: IPRoutingMode, rotationInterval: RotationInterval, onRotate: @escaping @Sendable (String) -> Void) {
         invalidateTimer()
         guard ipRoutingMode == .appWideUnited, let interval = rotationInterval.seconds else { return }
         nextRotationDate = Date().addingTimeInterval(interval)

@@ -1,7 +1,7 @@
 # rork-Sitchomatic-APEX — Project Plan & Architecture
 
 > **Codename: APEX** — Advanced Platform for Execution Excellence  
-> iOS 26 · Swift 5 · A19 Pro Max Optimised · Built on Rork
+> iOS 26 · Swift 6 · A19 Pro Max Optimised · Built on Rork
 
 ---
 
@@ -206,7 +206,7 @@ WidgetKit extension providing:
 
 | Component | Technology |
 |-----------|-----------|
-| Language | Swift 5.10+ with strict concurrency |
+| Language | Swift 6 with strict concurrency (`complete` checking) |
 | UI | SwiftUI (Observation framework) |
 | Networking | URLSession, WebKit (WKWebView) |
 | VPN | NordLynx, WireGuard (native), OpenVPN bridge |

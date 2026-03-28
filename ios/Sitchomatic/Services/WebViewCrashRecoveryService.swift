@@ -1,5 +1,5 @@
 import Foundation
-import WebKit
+@preconcurrency import WebKit
 
 @MainActor
 class WebViewCrashRecoveryService {

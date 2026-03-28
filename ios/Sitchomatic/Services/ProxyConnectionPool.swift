@@ -1,5 +1,5 @@
 import Foundation
-import Network
+@preconcurrency import Network
 import Observation
 
 nonisolated struct PooledConnectionInfo: Sendable {
@@ -86,7 +86,7 @@ class ProxyConnectionPool {
         }
     }
 
-    func acquireUpstream(targetHost: String, targetPort: UInt16, upstream: ProxyConfig?, completion: @escaping (NWConnection?, UUID?) -> Void) {
+    func acquireUpstream(targetHost: String, targetPort: UInt16, upstream: ProxyConfig?, completion: @escaping @Sendable (NWConnection?, UUID?) -> Void) {
         if !cleanupTimerStarted {
             cleanupTimerStarted = true
             startCleanupTimer()

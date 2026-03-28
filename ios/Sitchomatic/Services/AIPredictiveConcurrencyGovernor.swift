@@ -65,7 +65,7 @@ class AIPredictiveConcurrencyGovernor {
     private var consecutiveStableChecks: Int = 0
     private let stableChecksForRampUp: Int = 3
 
-    var onConcurrencyChanged: ((Int, String) -> Void)?
+    var onConcurrencyChanged: (@Sendable (Int, String) -> Void)?
 
     init() {
         if let data = UserDefaults.standard.data(forKey: persistKey),

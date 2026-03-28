@@ -29,10 +29,10 @@ class TCPSession {
     var receiveBuffer: Data = Data()
     var createdAt: Date = Date()
     var lastActivityAt: Date = Date()
-    var onDataReceived: ((Data) -> Void)?
-    var onConnectionEstablished: (() -> Void)?
-    var onConnectionClosed: (() -> Void)?
-    var onError: ((String) -> Void)?
+    var onDataReceived: (@Sendable (Data) -> Void)?
+    var onConnectionEstablished: (@Sendable () -> Void)?
+    var onConnectionClosed: (@Sendable () -> Void)?
+    var onError: (@Sendable (String) -> Void)?
     private var retransmitCount: Int = 0
     private let maxRetransmits: Int = 5
 
