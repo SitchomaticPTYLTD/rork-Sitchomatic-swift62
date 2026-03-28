@@ -2,9 +2,11 @@ import Foundation
 
 /// Configuration entry point for Grok AI (xAI) integration.
 ///
-/// Usage — call once at app startup or from a settings screen:
+/// Usage — call once from a settings screen or a secure bootstrap source:
 /// ```
-/// GrokAISetup.configure(apiKey: "<your-xai-api-key>")
+/// // Load from a secure source (e.g. user input, remote config, or build environment)
+/// let key = retrieveAPIKeyFromSecureSource()
+/// GrokAISetup.configure(apiKey: key)
 /// ```
 ///
 /// The key is stored in the iOS Keychain (encrypted at rest) and never
