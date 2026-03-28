@@ -2,8 +2,8 @@
   "$schema": "https://rork.com/schema/rork.json",
   "apps": [
     {
-      "name": "rork-Sitchomatic-APEX",
-      "path": "ios",
+      "name": "JoePointIgnition",
+      "path": "JoePointIgnition",
       "framework": "swift"
     }
   ]
