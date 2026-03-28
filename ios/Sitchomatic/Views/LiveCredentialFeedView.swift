@@ -6,6 +6,8 @@ struct LiveCredentialFeedView: View {
     @State private var autoRefresh: Bool = true
     @State private var fullScreenImage: UnifiedScreenshot?
 
+    private let maxEmailDisplayLength = 20
+
     private var credentialEmails: [String] {
         Array(Set(screenshotManager.screenshots.map(\.credentialEmail)))
             .sorted()
@@ -61,7 +63,7 @@ struct LiveCredentialFeedView: View {
                 }
                 ForEach(credentialEmails, id: \.self) { email in
                     let count = screenshotManager.screenshots.filter { $0.credentialEmail == email }.count
-                    chipButton(label: "\(email.prefix(20))… (\(count))", isSelected: selectedCredential == email) {
+                    chipButton(label: "\(email.prefix(maxEmailDisplayLength))… (\(count))", isSelected: selectedCredential == email) {
                         selectedCredential = email
                     }
                 }

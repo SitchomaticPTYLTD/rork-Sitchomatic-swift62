@@ -115,12 +115,12 @@ class LoginSiteWebSession: NSObject {
         let keyboardSuppressJS = WKUserScript(source: """
         (function() {
             'use strict';
-            var origFocus = HTMLElement.prototype.focus;
+            const origFocus = HTMLElement.prototype.focus;
             HTMLElement.prototype.focus = function(opts) {
                 if (this.tagName === 'INPUT' || this.tagName === 'TEXTAREA' || this.tagName === 'SELECT') {
                     this.setAttribute('readonly', 'readonly');
                     origFocus.call(this, opts);
-                    var el = this;
+                    const el = this;
                     setTimeout(function() { el.removeAttribute('readonly'); }, 100);
                 } else {
                     origFocus.call(this, opts);

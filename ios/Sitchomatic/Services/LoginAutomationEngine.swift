@@ -1414,14 +1414,15 @@ class LoginAutomationEngine {
         attempt.logs.append(PPSRLogEntry(message: "ERROR: \(message)", level: .error))
     }
 
-    private func captureAlwaysScreenshot(session: LoginSiteWebSession, attempt: LoginAttempt, cycle: Int, maxCycles: Int, welcomeTextFound: Bool, redirected: Bool, evaluationReason: String, currentURL: String, autoResult: PPSRDebugScreenshot.AutoDetectedResult) async {
+    private func shouldCaptureScreenshot(attempt: LoginAttempt) -> Bool {
         let limit = automationSettings.screenshotsPerAttempt.limit
-        guard limit > 0 else {
-            logger.log("Screenshot skipped (screenshotsPerAttempt=none)", category: .screenshot, level: .trace)
-            return
-        }
-        if attempt.screenshotIds.count >= limit {
-            logger.log("Screenshot limit reached (\(attempt.screenshotIds.count)/\(limit))", category: .screenshot, level: .trace)
+        guard limit > 0 else { return false }
+        return attempt.screenshotIds.count < limit
+    }
+
+    private func captureAlwaysScreenshot(session: LoginSiteWebSession, attempt: LoginAttempt, cycle: Int, maxCycles: Int, welcomeTextFound: Bool, redirected: Bool, evaluationReason: String, currentURL: String, autoResult: PPSRDebugScreenshot.AutoDetectedResult) async {
+        guard shouldCaptureScreenshot(attempt: attempt) else {
+            logger.log("Screenshot skipped (limit=\(automationSettings.screenshotsPerAttempt.limit), captured=\(attempt.screenshotIds.count))", category: .screenshot, level: .trace)
             return
         }
         logger.log("Capturing screenshot cycle \(cycle)/\(maxCycles) autoResult=\(autoResult)", category: .screenshot, level: .trace)
@@ -1774,13 +1775,8 @@ class LoginAutomationEngine {
     }
 
     private func captureDebugScreenshot(session: LoginSiteWebSession, attempt: LoginAttempt, step: String, note: String, autoResult: PPSRDebugScreenshot.AutoDetectedResult = .unknown) async {
-        let limit = automationSettings.screenshotsPerAttempt.limit
-        if limit == 0 {
-            logger.log("Debug screenshot skipped (screenshotsPerAttempt=none)", category: .screenshot, level: .trace)
-            return
-        }
-        if attempt.screenshotIds.count >= limit {
-            logger.log("Debug screenshot limit reached (\(attempt.screenshotIds.count)/\(limit))", category: .screenshot, level: .trace)
+        guard shouldCaptureScreenshot(attempt: attempt) else {
+            logger.log("Debug screenshot skipped (limit=\(automationSettings.screenshotsPerAttempt.limit), captured=\(attempt.screenshotIds.count))", category: .screenshot, level: .trace)
             return
         }
         guard let fullImage = await session.captureScreenshot() else { return }
