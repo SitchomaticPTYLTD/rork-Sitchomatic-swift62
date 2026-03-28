@@ -19,13 +19,13 @@ The APEX designation signifies the culmination of every architectural lesson lea
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    SwiftUI Views                     │  ← 90+ views
+│                    SwiftUI Views                     │  ← 88 views
 │         MainMenuView · DashboardViews · Sheets       │
 ├─────────────────────────────────────────────────────┤
 │                   ViewModels (16)                     │  ← @Observable
 │   LoginVM · PPSRAutomationVM · UnifiedSessionVM      │
 ├─────────────────────────────────────────────────────┤
-│               Service / Engine Layer                 │  ← 159 services
+│               Service / Engine Layer                 │  ← 161 services
 │  ApexAutomationEngine · ApexSessionEngine · AI ×18   │
 │  ProxyRotation · NordVPN · WireGuard · SOCKS5        │
 ├─────────────────────────────────────────────────────┤
@@ -33,7 +33,7 @@ The APEX designation signifies the culmination of every architectural lesson lea
 │  @MainActor · SitchomaticApexActor · IdentityActor   │
 │  AutomationActor · WebViewActor                      │
 ├─────────────────────────────────────────────────────┤
-│               Models & Persistence                   │  ← 47 models
+│               Models & Persistence                   │  ← 45 models
 │  LoginCredential · ProxySet · RecordedFlow · PPSR    │
 │  PersistentFileStorage · LogPersistence · Vault      │
 ├─────────────────────────────────────────────────────┤
@@ -233,10 +233,10 @@ rork-Sitchomatic-APEX/
     │   ├── ContentView.swift      Root content view
     │   ├── ProductMode.swift      App mode definitions
     │   ├── Assets.xcassets/       App icons, images, colours
-    │   ├── Models/                47 data model files
-    │   ├── Services/              159 service & engine files
+    │   ├── Models/                45 data model files
+    │   ├── Services/              161 service & engine files
     │   ├── ViewModels/            16 view-model controllers
-    │   ├── Views/                 90+ SwiftUI views
+    │   ├── Views/                 88 SwiftUI views
     │   └── Utilities/             12 helper utilities
     ├── SitchomaticTests/          Swift Testing unit tests
     ├── SitchomaticUITests/        XCTest UI automation tests
