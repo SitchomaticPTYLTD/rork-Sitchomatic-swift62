@@ -72,10 +72,8 @@ final class TunnelConfigurator {
 
     /// Disconnects and rotates to a new IP by re-establishing the tunnel.
     /// This is the core action of the "Burn & Rotate" protocol.
-    nonisolated func disconnectAndRotate() async {
-        await MainActor.run {
-            disconnect()
-        }
+    func disconnectAndRotate() async {
+        disconnect()
 
         // Brief cooldown before reconnecting to ensure IP release
         try? await Task.sleep(for: .milliseconds(500))

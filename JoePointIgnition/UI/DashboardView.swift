@@ -161,7 +161,7 @@ struct DashboardView: View {
         let limit = Int(concurrentLimit)
 
         isRunning = true
-        totalTests = emails.count * 3 * 2
+        totalTests = emails.count * passwords.count * TargetPlatform.allCases.count
 
         Task {
             await engine.runMatrix(

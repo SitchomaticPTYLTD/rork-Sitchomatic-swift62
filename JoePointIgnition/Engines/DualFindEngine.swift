@@ -73,8 +73,7 @@ final class DualFindEngine {
                     }
 
                     for platform in TargetPlatform.allCases {
-                        group.addTask { [weak self] in
-                            guard let self else { return }
+                        group.addTask {
                             let outcome = await self.executeHeadlessSession(
                                 email: nextEmail,
                                 password: password,
