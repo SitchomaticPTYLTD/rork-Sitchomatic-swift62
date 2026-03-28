@@ -290,6 +290,8 @@ struct SitchomaticApp: App {
             .preferredColorScheme(.dark)
         case .nordConfig:
             NordLynxConfigView()
+        case .splitTest:
+            DualWebStackView()
         case .vault:
             NavigationStack {
                 StorageFileBrowserView()

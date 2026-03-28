@@ -47,7 +47,10 @@ struct MainMenuView: View {
                     .frame(height: (geo.size.height - geo.safeAreaInsets.top - geo.safeAreaInsets.bottom) * 0.14)
 
                     ppsrZone(geo: geo)
-                        .frame(height: (geo.size.height - geo.safeAreaInsets.top - geo.safeAreaInsets.bottom) * 0.15)
+                        .frame(height: (geo.size.height - geo.safeAreaInsets.top - geo.safeAreaInsets.bottom) * 0.13)
+
+                    splitTestZone(geo: geo)
+                        .frame(height: (geo.size.height - geo.safeAreaInsets.top - geo.safeAreaInsets.bottom) * 0.10)
 
                     HStack(spacing: 0) {
                         settingsAndTestingZone(geo: geo)
@@ -340,6 +343,75 @@ struct MainMenuView: View {
         .sensoryFeedback(.impact(weight: .medium), trigger: activeMode == .ppsr)
     }
 
+    private func splitTestZone(geo: GeometryProxy) -> some View {
+        Button {
+            guard canEnterModes else { return }
+            withAnimation(.spring(duration: 0.4, bounce: 0.15)) {
+                activeMode = .splitTest
+            }
+        } label: {
+            ZStack {
+                LinearGradient(
+                    colors: [.green.opacity(0.12), .orange.opacity(0.12)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "suit.spade.fill")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(.green)
+                            Image(systemName: "plus")
+                                .font(.system(size: 10, weight: .heavy))
+                                .foregroundStyle(.white.opacity(0.4))
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(.orange)
+                        }
+
+                        Text("SPLIT TEST")
+                            .font(.system(size: 14, weight: .black, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.6), radius: 4)
+
+                        Text("Joe + Ignition Simultaneous")
+                            .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                    .padding(.leading, 20)
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Image(systemName: "rectangle.split.2x1.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(
+                                LinearGradient(colors: [.green, .orange], startPoint: .leading, endPoint: .trailing)
+                            )
+
+                        HStack(spacing: 3) {
+                            Text("LAUNCH")
+                                .font(.system(size: 8, weight: .heavy, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.5))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 7, weight: .heavy))
+                                .foregroundStyle(.white.opacity(0.3))
+                        }
+                    }
+                    .padding(.trailing, 20)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .opacity(animateIn ? (canEnterModes ? 1 : 0.35) : 0)
+        .offset(y: animateIn ? 0 : 20)
+        .allowsHitTesting(canEnterModes)
+        .sensoryFeedback(.impact(weight: .heavy), trigger: activeMode == .splitTest)
+    }
+
     private func settingsAndTestingZone(geo: GeometryProxy) -> some View {
         Button {
             guard canEnterModes else { return }
@@ -570,6 +642,7 @@ nonisolated enum ActiveAppMode: String, Sendable {
     case debugLog
     case flowRecorder
     case nordConfig
+    case splitTest
     case vault
     case ipScoreTest
     case dualFind

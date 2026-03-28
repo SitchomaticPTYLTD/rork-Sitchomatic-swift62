@@ -21,6 +21,8 @@ class LoginViewModel {
     var debugMode: Bool = false
     var stealthEnabled: Bool = true
     var targetSite: LoginTargetSite = .joefortune
+    var doubleSiteMode: Bool = false
+    var siteMode: SiteMode = .joe
     var appearanceMode: AppAppearanceMode = .dark
     var testTimeout: TimeInterval = 90
     var showBatchResultPopup: Bool = false
@@ -65,6 +67,31 @@ class LoginViewModel {
             urlRotation.isIgnitionMode = newValue
             targetSite = newValue ? .ignition : .joefortune
             persistSettings()
+        }
+    }
+
+    nonisolated enum SiteMode: String, CaseIterable, Sendable {
+        case joe = "Joe"
+        case double = "Double"
+        case ignition = "Ignition"
+    }
+
+    func setSiteMode(_ mode: SiteMode) {
+        siteMode = mode
+        switch mode {
+        case .joe:
+            isIgnitionMode = false
+            doubleSiteMode = false
+        case .double:
+            doubleSiteMode = true
+        case .ignition:
+            isIgnitionMode = true
+            doubleSiteMode = false
+        }
+        if isIgnitionMode {
+            targetSite = .ignition
+        } else {
+            targetSite = .joefortune
         }
     }
 
