@@ -4,6 +4,7 @@ struct LoginSettingsContentView: View {
     @Bindable var vm: LoginViewModel
     @State private var showDebugScreenshots: Bool = false
     @State private var showSelectTesting: Bool = false
+    @State private var showLiveFeed: Bool = false
     @State private var selectedCredentialIds: Set<String> = []
 
     private var accentColor: Color { .green }
@@ -28,6 +29,17 @@ struct LoginSettingsContentView: View {
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
                             Button("Done") { showDebugScreenshots = false }
+                        }
+                    }
+            }
+            .presentationDetents([.large])
+        }
+        .sheet(isPresented: $showLiveFeed) {
+            NavigationStack {
+                LiveCredentialFeedView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Done") { showLiveFeed = false }
                         }
                     }
             }
@@ -166,6 +178,27 @@ struct LoginSettingsContentView: View {
             }
             .tint(.orange)
 
+            Picker(selection: Binding(
+                get: { vm.automationSettings.screenshotsPerAttempt },
+                set: { newValue in
+                    vm.automationSettings.screenshotsPerAttempt = newValue
+                    vm.persistAutomationSettings()
+                }
+            )) {
+                ForEach(AutomationSettings.ScreenshotsPerAttempt.allCases, id: \.self) { option in
+                    Text(option.rawValue).tag(option)
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "camera.fill").foregroundStyle(.cyan)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Screenshots Per Attempt").font(.body)
+                        Text("Number of screenshots captured per login test").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .pickerStyle(.menu)
+
             if vm.debugMode {
                 Button { showDebugScreenshots = true } label: {
                     HStack {
@@ -173,6 +206,16 @@ struct LoginSettingsContentView: View {
                         Text("Debug Screenshots").foregroundStyle(.primary)
                         Spacer()
                         Text("\(vm.debugScreenshots.count)").font(.system(.caption, design: .monospaced, weight: .bold)).foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                    }
+                }
+
+                Button { showLiveFeed = true } label: {
+                    HStack {
+                        Image(systemName: "antenna.radiowaves.left.and.right").foregroundStyle(.green)
+                        Text("Live Screenshot Feed").foregroundStyle(.primary)
+                        Spacer()
+                        Text("\(UnifiedScreenshotManager.shared.screenshots.count)").font(.system(.caption, design: .monospaced, weight: .bold)).foregroundStyle(.secondary)
                         Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
                     }
                 }
