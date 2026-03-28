@@ -7,7 +7,7 @@
 // before retrying the credential.
 
 import Foundation
-import WebKit
+@preconcurrency import WebKit
 
 /// Centralised identity-rotation actor.
 /// Thread-safe, non-MainActor so it can be called from any

@@ -1,5 +1,5 @@
 import Foundation
-import Network
+@preconcurrency import Network
 import Observation
 
 nonisolated struct WGEndpointTestResult: Sendable {

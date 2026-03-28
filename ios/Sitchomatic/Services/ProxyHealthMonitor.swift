@@ -52,13 +52,13 @@ class ProxyHealthMonitor {
     private let settingsKey = "proxy_health_monitor_v1"
 
     private var currentUpstream: ProxyConfig?
-    private var onFailoverNeeded: (() -> Void)?
+    private var onFailoverNeeded: (@Sendable () -> Void)?
 
     init() {
         loadSettings()
     }
 
-    func startMonitoring(upstream: ProxyConfig?, onFailover: @escaping () -> Void) {
+    func startMonitoring(upstream: ProxyConfig?, onFailover: @escaping @Sendable () -> Void) {
         stopMonitoring()
         currentUpstream = upstream
         onFailoverNeeded = onFailover

@@ -1,5 +1,5 @@
 import Foundation
-import WebKit
+@preconcurrency import WebKit
 import UIKit
 
 nonisolated enum AutomationTaskType: String, Sendable {
@@ -49,7 +49,7 @@ class AutomationActor {
         urls: [URL],
         stealthEnabled: Bool,
         timeout: TimeInterval = 90,
-        onProgress: @escaping (Int, Int, LoginOutcome) -> Void
+        onProgress: @escaping @Sendable (Int, Int, LoginOutcome) -> Void
     ) async -> [LoginOutcome] {
         let batchId = "batch_\(UUID().uuidString.prefix(8))"
         let timeout = TimeoutResolver.resolveAutomationTimeout(timeout)

@@ -1,5 +1,5 @@
 import Foundation
-import Network
+@preconcurrency import Network
 import CryptoKit
 import Observation
 
@@ -96,7 +96,7 @@ class WireGuardSession {
     private let queue = DispatchQueue(label: "wg-session", qos: .userInitiated)
     private let logger = DebugLogger.shared
 
-    var onPacketReceived: ((Data) -> Void)?
+    var onPacketReceived: (@Sendable (Data) -> Void)?
 
     private var staticPrivateKey: Curve25519.KeyAgreement.PrivateKey?
     private var peerPublicKey: Curve25519.KeyAgreement.PublicKey?

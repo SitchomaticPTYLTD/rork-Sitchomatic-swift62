@@ -10,7 +10,7 @@
 // and WKScriptMessageHandlerWithReply for zero-bridge JS communication.
 
 import Foundation
-import WebKit
+@preconcurrency import WebKit
 import UIKit
 import Vision
 
@@ -42,10 +42,10 @@ class LoginSiteWebSession: NSObject {
     private(set) var stealthProfile: PPSRStealthService.SessionProfile?
     private(set) var lastFingerprintScore: FingerprintValidationService.FingerprintScore?
     private(set) var activeProfileIndex: Int?
-    var onFingerprintLog: ((String, PPSRLogEntry.Level) -> Void)?
+    var onFingerprintLog: (@Sendable (String, PPSRLogEntry.Level) -> Void)?
     private(set) var navigationCount: Int = 0
     private(set) var processTerminated: Bool = false
-    var onProcessTerminated: (() -> Void)?
+    var onProcessTerminated: (@Sendable () -> Void)?
     var monitoringSessionId: String?
     var fingerprintValidationEnabled: Bool = false
 
@@ -1492,7 +1492,7 @@ class LoginWebSession: NSObject {
     var networkConfig: ActiveNetworkConfig = .direct
     private(set) var stealthProfile: PPSRStealthService.SessionProfile?
     private(set) var lastFingerprintScore: FingerprintValidationService.FingerprintScore?
-    var onFingerprintLog: ((String, PPSRLogEntry.Level) -> Void)?
+    var onFingerprintLog: (@Sendable (String, PPSRLogEntry.Level) -> Void)?
 
     static let targetURL = URL(string: "https://transact.ppsr.gov.au/CarCheck/")!
 
@@ -2240,7 +2240,7 @@ class BPointWebSession: NSObject {
     var lastNavigationError: String?
     var lastHTTPStatusCode: Int?
     var networkConfig: ActiveNetworkConfig = .direct
-    var onFingerprintLog: ((String, PPSRLogEntry.Level) -> Void)?
+    var onFingerprintLog: (@Sendable (String, PPSRLogEntry.Level) -> Void)?
 
     static let targetURL = URL(string: "https://www.bpoint.com.au/payments/DepartmentOfFinance")!
     static let billerLookupURL = URL(string: "https://www.bpoint.com.au/payments/billpayment/Payment/Index")!

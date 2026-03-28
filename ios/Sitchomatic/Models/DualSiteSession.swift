@@ -167,7 +167,7 @@ nonisolated struct SiteOCRMetadata: Codable, Sendable {
     let screenshotTimestamp: Date
 }
 
-struct DualSiteSession: Identifiable, Codable, Sendable {
+nonisolated struct DualSiteSession: Identifiable, Codable, Sendable {
     let id: String
     let credential: SessionCredential
     let identity: SessionIdentity
