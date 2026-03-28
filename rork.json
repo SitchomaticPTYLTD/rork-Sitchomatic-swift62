@@ -2,7 +2,7 @@
   "$schema": "https://rork.com/schema/rork.json",
   "apps": [
     {
-      "name": "Sitchomatic",
+      "name": "rork-Sitchomatic-APEX",
       "path": "ios",
       "framework": "swift"
     }

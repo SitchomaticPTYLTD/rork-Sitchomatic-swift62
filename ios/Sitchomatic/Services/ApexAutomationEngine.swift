@@ -1,5 +1,5 @@
 // ApexAutomationEngine.swift
-// Sitchomatic — Apex Edition
+// rork-Sitchomatic-APEX
 //
 // Maximum-concurrency automation engine for A19 Pro Max.
 // Uses ContiguousArray for zero-latency credential access,

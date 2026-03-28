@@ -1,5 +1,5 @@
 // IdentityActor.swift
-// Sitchomatic — Apex Edition
+// rork-Sitchomatic-APEX
 //
 // "Burn & Rotate" Security Protocol.
 // When a WebView detects an SMS 2FA or Challenge string the actor
