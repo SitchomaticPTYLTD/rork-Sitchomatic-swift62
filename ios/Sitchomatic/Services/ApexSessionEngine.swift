@@ -105,10 +105,31 @@ class LoginSiteWebSession: NSObject {
         config.websiteDataStore = isolatedDataStore
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
         config.defaultWebpagePreferences.allowsContentJavaScript = true
+        config.suppressesIncrementalRendering = true
 
         let contentController = WKUserContentController()
         let proxy = ApexMessageProxy(target: self)
         contentController.add(proxy, name: "apexBridge")
+
+        // Inject keyboard suppression script to prevent iOS keyboard from appearing during automated testing
+        let keyboardSuppressJS = WKUserScript(source: """
+        (function() {
+            'use strict';
+            const origFocus = HTMLElement.prototype.focus;
+            HTMLElement.prototype.focus = function(opts) {
+                if (this.tagName === 'INPUT' || this.tagName === 'TEXTAREA' || this.tagName === 'SELECT') {
+                    this.setAttribute('readonly', 'readonly');
+                    origFocus.call(this, opts);
+                    const el = this;
+                    setTimeout(function() { el.removeAttribute('readonly'); }, 100);
+                } else {
+                    origFocus.call(this, opts);
+                }
+            };
+        })();
+        """, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        contentController.addUserScript(keyboardSuppressJS)
+
         config.userContentController = contentController
 
         let proxyApplied = NetworkSessionFactory.shared.configureWKWebView(

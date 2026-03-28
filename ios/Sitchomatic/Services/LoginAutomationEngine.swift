@@ -1414,7 +1414,17 @@ class LoginAutomationEngine {
         attempt.logs.append(PPSRLogEntry(message: "ERROR: \(message)", level: .error))
     }
 
+    private func shouldCaptureScreenshot(attempt: LoginAttempt) -> Bool {
+        let limit = automationSettings.screenshotsPerAttempt.limit
+        guard limit > 0 else { return false }
+        return attempt.screenshotIds.count < limit
+    }
+
     private func captureAlwaysScreenshot(session: LoginSiteWebSession, attempt: LoginAttempt, cycle: Int, maxCycles: Int, welcomeTextFound: Bool, redirected: Bool, evaluationReason: String, currentURL: String, autoResult: PPSRDebugScreenshot.AutoDetectedResult) async {
+        guard shouldCaptureScreenshot(attempt: attempt) else {
+            logger.log("Screenshot skipped (limit=\(automationSettings.screenshotsPerAttempt.limit), captured=\(attempt.screenshotIds.count))", category: .screenshot, level: .trace)
+            return
+        }
         logger.log("Capturing screenshot cycle \(cycle)/\(maxCycles) autoResult=\(autoResult)", category: .screenshot, level: .trace)
         guard let img = await session.captureScreenshot() else {
             logger.log("Screenshot capture FAILED (nil)", category: .screenshot, level: .warning)
@@ -1765,6 +1775,10 @@ class LoginAutomationEngine {
     }
 
     private func captureDebugScreenshot(session: LoginSiteWebSession, attempt: LoginAttempt, step: String, note: String, autoResult: PPSRDebugScreenshot.AutoDetectedResult = .unknown) async {
+        guard shouldCaptureScreenshot(attempt: attempt) else {
+            logger.log("Debug screenshot skipped (limit=\(automationSettings.screenshotsPerAttempt.limit), captured=\(attempt.screenshotIds.count))", category: .screenshot, level: .trace)
+            return
+        }
         guard let fullImage = await session.captureScreenshot() else { return }
 
         attempt.responseSnapshot = fullImage

@@ -111,6 +111,7 @@ nonisolated struct AutomationSettings: Codable, Sendable {
     var screenshotOnFailure: Bool = true
     var screenshotOnSuccess: Bool = true
     var maxScreenshotRetention: Int = 500
+    var screenshotsPerAttempt: ScreenshotsPerAttempt = .three
 
     // MARK: - Concurrency
     var maxConcurrency: Int = 7
@@ -313,6 +314,22 @@ nonisolated struct AutomationSettings: Codable, Sendable {
     }
 
     // MARK: - Enums
+
+    nonisolated enum ScreenshotsPerAttempt: String, Codable, CaseIterable, Sendable {
+        case none = "None"
+        case one = "1"
+        case three = "3"
+        case five = "5"
+
+        var limit: Int {
+            switch self {
+            case .none: 0
+            case .one: 1
+            case .three: 3
+            case .five: 5
+            }
+        }
+    }
 
     nonisolated enum EvaluationStrictness: String, Codable, CaseIterable, Sendable {
         case lenient = "Lenient"

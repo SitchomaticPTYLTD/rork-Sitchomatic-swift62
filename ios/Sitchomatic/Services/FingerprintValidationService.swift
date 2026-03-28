@@ -202,6 +202,55 @@ class FingerprintValidationService {
             }
         } catch(e) {}
 
+        // 10. LANGUAGE CONSISTENCY CHECK (weight 3)
+        try {
+            var lang = navigator.language;
+            var langs = navigator.languages;
+            if (lang && langs && langs.length > 0) {
+                if (langs[0] !== lang) {
+                    score += 3;
+                    signals.push('+3 language mismatch: lang=' + lang + ' languages[0]=' + langs[0]);
+                }
+            }
+            if (!lang || lang === '' || lang === 'undefined') {
+                score += 2;
+                signals.push('+2 navigator.language empty or undefined');
+            }
+            if (!langs || langs.length === 0) {
+                score += 2;
+                signals.push('+2 navigator.languages empty');
+            }
+        } catch(e) {}
+
+        // 11. FONT DETECTION CHECK (weight 3)
+        try {
+            var testFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Courier New'];
+            var baseFonts = ['monospace', 'sans-serif', 'serif'];
+            var testStr = 'mmmmmmmmmmlli';
+            var testSize = '72px';
+            var span = document.createElement('span');
+            span.style.cssText = 'position:absolute;left:-9999px;font-size:' + testSize;
+            span.textContent = testStr;
+            document.body.appendChild(span);
+            var detectedFonts = 0;
+            for (var f = 0; f < testFonts.length; f++) {
+                for (var b = 0; b < baseFonts.length; b++) {
+                    span.style.fontFamily = baseFonts[b];
+                    var baseWidth = span.offsetWidth;
+                    span.style.fontFamily = "'" + testFonts[f] + "'," + baseFonts[b];
+                    if (span.offsetWidth !== baseWidth) {
+                        detectedFonts++;
+                        break;
+                    }
+                }
+            }
+            document.body.removeChild(span);
+            if (detectedFonts === 0) {
+                score += 3;
+                signals.push('+3 no system fonts detected (headless/stripped environment)');
+            }
+        } catch(e) {}
+
         if (signals.length === 0) signals.push('All checks clean');
 
         return JSON.stringify({
