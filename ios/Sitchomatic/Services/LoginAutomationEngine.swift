@@ -46,7 +46,6 @@ class LoginAutomationEngine {
     private let aiSessionHealth = AISessionHealthMonitorService.shared
     private let aiCredentialPriority = AICredentialPriorityScoringService.shared
     private let aiAntiDetection = AIAntiDetectionAdaptiveService.shared
-    private let customTools = AICustomToolsCoordinator.shared
     private let aiInteractionGraph = AIReinforcementInteractionGraph.shared
     private let activityMonitor = SessionActivityMonitor.shared
     private let liveSpeed = LiveSpeedAdaptationService.shared
@@ -326,19 +325,7 @@ class LoginAutomationEngine {
         }
 
         if outcome == .connectionFailure || outcome == .timeout || outcome == .unsure {
-            Task {
-                let recentLogs = attempt.logs.suffix(10).map(\.message)
-                let _ = await customTools.analyzeRunHealth(
-                    sessionId: sessionId,
-                    logs: recentLogs,
-                    pageText: nil,
-                    screenshotAvailable: false,
-                    currentOutcome: "\(outcome)",
-                    host: host,
-                    attemptNumber: 1,
-                    elapsedMs: aiLatencyMs
-                )
-            }
+            logger.log("Run health issue: \(outcome) for session \(sessionId)", category: .automation, level: .warning)
         }
 
         let isOutcomeSuccess = outcome == .success || outcome == .noAcc || outcome == .permDisabled || outcome == .tempDisabled

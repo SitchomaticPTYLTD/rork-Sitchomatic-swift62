@@ -19,13 +19,13 @@ The APEX designation signifies the culmination of every architectural lesson lea
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    SwiftUI Views                     │  ← 98 views
+│                    SwiftUI Views                     │  ← 90 views
 │         MainMenuView · DashboardViews · Sheets       │
 ├─────────────────────────────────────────────────────┤
-│                   ViewModels (20)                     │  ← @Observable
+│                   ViewModels (16)                     │  ← @Observable
 │   LoginVM · PPSRAutomationVM · UnifiedSessionVM      │
 ├─────────────────────────────────────────────────────┤
-│               Service / Engine Layer                 │  ← 168 services
+│               Service / Engine Layer                 │  ← 151 services
 │  ApexAutomationEngine · ApexSessionEngine · AI ×18   │
 │  ProxyRotation · NordVPN · WireGuard · SOCKS5        │
 ├─────────────────────────────────────────────────────┤
@@ -234,9 +234,9 @@ rork-Sitchomatic-APEX/
     │   ├── ProductMode.swift      App mode definitions
     │   ├── Assets.xcassets/       App icons, images, colours
     │   ├── Models/                45 data model files
-    │   ├── Services/              168 service & engine files
-    │   ├── ViewModels/            20 view-model controllers
-    │   ├── Views/                 98 SwiftUI views
+    │   ├── Services/              151 service & engine files
+    │   ├── ViewModels/            16 view-model controllers
+    │   ├── Views/                 90 SwiftUI views
     │   └── Utilities/             12 helper utilities
     ├── SitchomaticTests/          Swift Testing unit tests
     ├── SitchomaticUITests/        XCTest UI automation tests

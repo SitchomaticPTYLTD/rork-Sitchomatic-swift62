@@ -210,7 +210,6 @@ struct UnifiedSessionFeedView: View {
                     statusHeader
 
                     if vm.isRunning {
-                        AdaptiveConcurrencyDashboardView(engine: vm.adaptiveEngine)
                         batchProgressCard
                         batchControls
                     }

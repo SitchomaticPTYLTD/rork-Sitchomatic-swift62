@@ -87,11 +87,11 @@ AutomationActor      // Flow playback, JS interaction, throttled execution
 
 ```
 ┌──────────────────────────────────────────────────┐
-│              SwiftUI Views (98)                  │
+│              SwiftUI Views (90)                  │
 ├──────────────────────────────────────────────────┤
-│           ViewModels (20 controllers)             │
+│           ViewModels (16 controllers)             │
 ├──────────────────────────────────────────────────┤
-│        Services & Engines (168 files)             │
+│        Services & Engines (151 files)             │
 │   AI (18) · Network (17) · Resilience (13)        │
 ├──────────────────────────────────────────────────┤
 │            Models & Persistence (45)              │
@@ -169,9 +169,9 @@ rork-Sitchomatic-APEX/
     │   ├── ProductMode.swift       # App mode definitions
     │   ├── Assets.xcassets/        # Icons, images, colours
     │   ├── Models/                 # 45 data models
-    │   ├── Services/               # 168 services & engines
-    │   ├── ViewModels/             # 20 view-model controllers
-    │   ├── Views/                  # 98 SwiftUI views
+    │   ├── Services/               # 151 services & engines
+    │   ├── ViewModels/             # 16 view-model controllers
+    │   ├── Views/                  # 90 SwiftUI views
     │   └── Utilities/              # 12 helper utilities
     ├── SitchomaticTests/           # Swift Testing unit tests
     ├── SitchomaticUITests/         # XCTest UI automation

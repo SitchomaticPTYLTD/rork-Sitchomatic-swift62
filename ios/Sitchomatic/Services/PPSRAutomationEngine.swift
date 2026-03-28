@@ -33,7 +33,6 @@ class PPSRAutomationEngine {
     private let aiAntiDetection = AIAntiDetectionAdaptiveService.shared
     private let aiFingerprintTuning = AIFingerprintTuningService.shared
     private let aiChallengeSolver = AIChallengePageSolverService.shared
-    private let customTools = AICustomToolsCoordinator.shared
 
     var canStartSession: Bool {
         activeSessions < maxConcurrency
